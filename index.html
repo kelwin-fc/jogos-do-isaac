@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Os Jogos do Isaac</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#7ec8ff">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="splash-on">
+<canvas id="game"></canvas>
+
+<div id="splash">
+  <div class="menu">
+    <div class="title">Os Jogos<br>do Isaac</div>
+    <div class="sub">🌈 ⭐ 🎈</div>
+    <div class="jogos">
+      <button id="btnPlayFly" class="play"><span class="ic">✈️</span><span class="nm">AVIÃO</span></button>
+      <button id="btnPlayCastle" class="play"><span class="ic">🏰</span><span class="nm">CASTELOS</span></button>
+      <button id="btnPlayFutebol" class="play"><span class="ic">⚽</span><span class="nm">FUTEBOL</span></button>
+      <button id="btnPlayCarros" class="play"><span class="ic">🚗</span><span class="nm">CARROS</span></button>
+      <button id="btnPlayBarbie" class="play"><span class="ic">👑</span><span class="nm">BARBIE</span></button>
+      <button id="btnPlayNinja" class="play"><span class="ic">🥷</span><span class="nm">NINJAS</span></button>
+      <button id="btnPlayMorcegos" class="play"><span class="ic">🦇</span><span class="nm">MORCEGOS</span></button>
+      <button id="btnPlayDamas" class="play"><span class="ic">🔴</span><span class="nm">DAMAS</span></button>
+      <button id="btnPlayViuvas" class="play"><span class="ic">🕷️</span><span class="nm">VIÚVAS</span></button>
+      <button id="btnPlayPista" class="play"><span class="ic">🏁</span><span class="nm">CORRIDA</span></button>
+      <button id="btnPlayEgito" class="play"><span class="ic">🏛️</span><span class="nm">EGITO</span></button>
+      <button id="btnPlayDragao" class="play"><span class="ic">🏟️</span><span class="nm">DRAGÃO</span></button>
+      <button id="btnPlayCobras" class="play"><span class="ic">🐍</span><span class="nm">COBRAS</span></button>
+      <button id="btnPlayClassico" class="play"><span class="ic">⚽</span><span class="nm">BARÇA</span></button>
+      <button id="btnPlayMarvel" class="play"><span class="ic">🦸</span><span class="nm">MARVEL</span></button>
+      <button id="btnPlayMauzoes" class="play"><span class="ic">🦹</span><span class="nm">MAUZÕES</span></button>
+      <button id="btnPlayPokemon" class="play"><span class="ic"><span class="pokebola"></span></span><span class="nm">POKÉMON</span></button>
+      <button id="btnPlayLegos" class="play"><span class="ic">🧱</span><span class="nm">NICOLE</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="banner"></div>
+
+<button id="btnSound">🔊</button>
+<button id="btnHome">🏠</button>
+<button id="btnEstilo" title="trocar o estilo do menu">🎛️</button>
+
+<button id="btnHorn" class="ctl">📯</button>
+<button id="btnLeft" class="ctl">◀</button>
+<button id="btnRight" class="ctl">▶</button>
+<button id="btnJump" class="ctl">⬆</button>
+<button id="btnFire" class="ctl">⚡</button>
+
+<!-- controlos dos CARROS, desenhados como o Isaac pediu -->
+<button id="btnGas" class="pedal" aria-label="acelerar"></button>
+<button id="btnBrake" class="pedal" aria-label="parar">🛑</button>
+<button id="btnDoor" class="ctl">🚪</button>
+<button id="btnRoad">🗺️</button>
+
+<script src="js/audio.js"></script>
+<script src="js/input.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/flight.js"></script>
+<script src="js/parachute.js"></script>
+<script src="js/jungle.js"></script>
+<script src="js/escape.js"></script>
+<script src="js/castle.js"></script>
+<script src="js/futebol.js"></script>
+<script src="js/carros.js"></script>
+<script src="js/barbie.js"></script>
+<script src="js/ninja.js"></script>
+<script src="js/morcegos.js"></script>
+<script src="js/damas.js"></script>
+<script src="js/viuvas.js"></script>
+<script src="js/pista.js"></script>
+<script src="js/egito.js"></script>
+<script src="js/dragao.js"></script>
+<script src="js/cobras.js"></script>
+<script src="js/legos.js"></script>
+<script src="js/marvel.js"></script>
+<script src="js/mauzoes.js"></script>
+<script src="js/pokemon.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
