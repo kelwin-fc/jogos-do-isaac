@@ -333,6 +333,36 @@
     if (G.audio.ctx) { if (document.hidden) G.audio.ctx.suspend(); else G.audio.ctx.resume(); }
   });
 
+  /* ---------- instalar no telemóvel (PWA) ----------
+     O service worker guarda o jogo para abrir sem internet. Só funciona servido por
+     http(s) — aberto por duplo clique (file://) o jogo continua igual, sem instalar.
+     O botão 📲 só aparece no menu quando o browser deixa instalar (Android/Chrome);
+     no iPhone instala-se pelo botão Partilhar → "Adicionar ao ecrã principal". */
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* sem instalar, joga-se na mesma */ });
+    });
+  }
+  const btnInstalar = document.getElementById('btnInstalar');
+  let pedidoInstalar = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    pedidoInstalar = e;
+    document.body.classList.add('pode-instalar');
+  });
+  window.addEventListener('appinstalled', function () {
+    pedidoInstalar = null;
+    document.body.classList.remove('pode-instalar');
+  });
+  btnInstalar.addEventListener('click', function () {
+    if (!pedidoInstalar) return;
+    pedidoInstalar.prompt();
+    pedidoInstalar.userChoice.then(function () {
+      pedidoInstalar = null;
+      document.body.classList.remove('pode-instalar');
+    });
+  });
+
   G.input.bind();
   requestAnimationFrame(function (ts) { last = ts / 1000; requestAnimationFrame(loop); });
 })();

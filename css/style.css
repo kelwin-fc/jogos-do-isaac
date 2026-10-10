@@ -302,6 +302,24 @@ body.splash-on #btnHome { display: none; }
 }
 body.splash-on #btnEstilo { display: block; }
 
+/* ---------- botão de instalar no telemóvel (só quando o browser deixa) ---------- */
+#btnInstalar {
+  display: none;
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.35);
+  font-size: 22px;
+  z-index: 22;
+  padding: 0;
+  cursor: pointer;
+}
+body.splash-on.pode-instalar #btnInstalar { display: block; }
+
 /* ---------- splash ---------- */
 /* Tudo tem de caber em qualquer ecrã: os tamanhos olham para a largura E para a
    altura, e o main.js encolhe o bloco todo (--fit) se ainda assim faltar espaço. */

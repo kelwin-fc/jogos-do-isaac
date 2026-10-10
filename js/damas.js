@@ -224,12 +224,43 @@
     G.banner('Toca numa peça e depois na casa! 🔴', 3200);
   };
 
+  /* Onde fica cada coisa. Tem de servir em qualquer ecrã (havia sobreposições no
+     telemóvel): os botões 🏠 🔊 ocupam o canto de cima à direita, por isso
+       - ao alto, a faixa da vez desce para baixo deles se não couber ao lado;
+       - deitado, o tabuleiro ocupa a altura toda e os dois botões vão para os lados;
+       - as estrelas ficam sempre no canto de cima à esquerda, que está livre. */
   function tamanho() {
     const W = G.W, H = G.H;
-    // W - 96 deixa sempre margem para os bancos dos dois lados (em telemóvel ao alto
-    // o tabuleiro a toda a largura escondia quem tinha sido comido)
-    const lado = Math.min(W - 96, W * 0.92, H * 0.74);
-    return { cel: lado / 8, x0: (W - lado) / 2, y0: H * 0.15, lado: lado };
+    const FW = Math.min(264, W - 24);                    // largura da faixa da vez
+    const BW = 148, BH = 60;                             // botões voltar / nível
+    const faixaTopo = (W / 2 + FW / 2 > W - 132) ? 70 : 10;
+    let y0 = faixaTopo + 50 + 22;
+    const deitado = W >= H * 1.25 && W - (H - y0 - 14) >= 2 * (BW + 80);
+    let lado, x0, bv, bn;
+    if (deitado) {
+      lado = Math.min(H - y0 - 14, W - 2 * (BW + 80));
+      x0 = (W - lado) / 2;
+      const cx = Math.max(BW / 2 + 8, (x0 - 60) / 2);
+      const cy = y0 + lado / 2;
+      bv = { x: cx, y: cy };
+      bn = { x: W - cx, y: cy };
+    } else {
+      // W - 96 deixa sempre margem para os bancos dos dois lados (em telemóvel ao alto
+      // o tabuleiro a toda a largura escondia quem tinha sido comido)
+      lado = Math.max(120, Math.min(W - 96, W * 0.92, H - y0 - 44 - BH / 2 - 10));
+      // sobra espaço em baixo (telemóvel ao alto): desce tudo um bocadinho para o meio
+      const fundo = y0 + lado + 44 + BH / 2;
+      const desce = Math.max(0, (H - 10 - fundo) * 0.4);
+      y0 += desce;
+      x0 = (W - lado) / 2;
+      bv = { x: W / 2 - 92, y: y0 + lado + 44 };
+      bn = { x: W / 2 + 92, y: y0 + lado + 44 };
+    }
+    return {
+      cel: lado / 8, x0: x0, y0: y0, lado: lado,
+      faixa: { x: W / 2, y: y0 - 43, w: FW }, voltar: bv, nivel: bn, bw: BW, bh: BH,
+      estrela: { x: 34, y: 36 }
+    };
   }
   function casaEm(px, py) {
     const g = tamanho();
@@ -333,9 +364,10 @@
     if (!inp.tap) return;
     const g = tamanho();
     // botões desenhados no ecrã (funcionam mesmo a meio de uma animação)
-    if (inp.tap.y > g.y0 + g.lado + 8) {
-      if (Math.abs(inp.tap.x - (G.W / 2 - 92)) < 74) { voltarAtras(); return; }
-      if (Math.abs(inp.tap.x - (G.W / 2 + 92)) < 74) {
+    {
+      const naCaixa = function (b) { return Math.abs(inp.tap.x - b.x) < g.bw / 2 + 4 && Math.abs(inp.tap.y - b.y) < g.bh / 2 + 6; };
+      if (naCaixa(g.voltar)) { voltarAtras(); return; }
+      if (naCaixa(g.nivel)) {
         nivel = (nivel + 1) % NIVEIS.length;
         G.audio.sfx('pop');
         G.banner(doisJogadores() ? 'Dois jogadores! 🔴 vs 🔵' : 'Computador ' + NIVEIS[nivel].nome + ' 🎯', 2000);
@@ -587,48 +619,50 @@
 
     // de quem é a vez: cara + seta a saltar (humano) ou pontinhos a pensar (computador)
     const humano = !fim && (vez > 0 || doisJogadores());
-    G.gfx.rr(c, W / 2 - 132, g.y0 - 68, 264, 50, 25);
+    const f = g.faixa, fx = f.x - f.w / 2;
+    G.gfx.rr(c, fx, f.y - 25, f.w, 50, 25);
     c.fillStyle = vez > 0 ? '#e63946' : '#1c6fa8'; c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = 4; c.stroke();
-    c.save(); c.translate(W / 2 - 96, g.y0 - 43);
+    const k = f.w / 264;                                  // em ecrãs estreitos encolhe tudo
+    c.save(); c.translate(fx + 36 * k, f.y);
     caraAviao(c, t, { lado: vez, dama: false, r: 19, fase: 0 });
     c.restore();
     if (humano) {
-      setaBaixo(c, W / 2 - 12, g.y0 - 43 + Math.sin(t * 4) * 4, 26, '#ffd166');
-      G.gfx.label(c, 'joga tu', W / 2 + 52, g.y0 - 42, 22, '#fff', 'center', 'rgba(0,0,0,.45)');
+      setaBaixo(c, fx + 120 * k, f.y + Math.sin(t * 4) * 4, 26, '#ffd166');
+      G.gfx.label(c, 'joga tu', fx + 184 * k, f.y + 1, 22, '#fff', 'center', 'rgba(0,0,0,.45)');
     } else {
-      pontinhos(c, W / 2 - 10, g.y0 - 43, 16, t);
-      G.gfx.label(c, 'a pensar', W / 2 + 56, g.y0 - 42, 20, '#fff', 'center', 'rgba(0,0,0,.45)');
+      pontinhos(c, fx + 122 * k, f.y, 16, t);
+      G.gfx.label(c, 'a pensar', fx + 188 * k, f.y + 1, 20, '#fff', 'center', 'rgba(0,0,0,.45)');
     }
 
     // botões: o desenho manda, a palavra é só para os crescidos
-    const by2 = g.y0 + g.lado + 44;
-    G.gfx.rr(c, W / 2 - 166, by2 - 30, 148, 60, 26);
+    const bv = g.voltar, bn = g.nivel, bw = g.bw, bh = g.bh;
+    G.gfx.rr(c, bv.x - bw / 2, bv.y - bh / 2, bw, bh, 26);
     c.fillStyle = '#6aa806'; c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = 4; c.stroke();
-    setaVoltar(c, W / 2 - 122, by2 - 2, 22);
-    G.gfx.label(c, 'voltar', W / 2 - 68, by2 - 1, 21, '#fff', 'center', 'rgba(0,0,0,.45)');
+    setaVoltar(c, bv.x - 44, bv.y - 2, 22);
+    G.gfx.label(c, 'voltar', bv.x + 10, bv.y - 1, 21, '#fff', 'center', 'rgba(0,0,0,.45)');
 
-    G.gfx.rr(c, W / 2 + 18, by2 - 30, 148, 60, 26);
+    G.gfx.rr(c, bn.x - bw / 2, bn.y - bh / 2, bw, bh, 26);
     c.fillStyle = '#4b4dbe'; c.fill();
     c.strokeStyle = '#fff'; c.lineWidth = 4; c.stroke();
     // quantas caras azuis = quão forte está o computador (1, 2 ou 3);
     // uma vermelha + uma azul = dois jogadores
     if (doisJogadores()) {
-      c.save(); c.translate(W / 2 + 76, by2 - 8); caraAviao(c, t, { lado: 1, dama: false, r: 14, fase: 0 }); c.restore();
-      c.save(); c.translate(W / 2 + 108, by2 - 8); caraAviao(c, t, { lado: -1, dama: false, r: 14, fase: 2 }); c.restore();
+      c.save(); c.translate(bn.x - 16, bn.y - 8); caraAviao(c, t, { lado: 1, dama: false, r: 14, fase: 0 }); c.restore();
+      c.save(); c.translate(bn.x + 16, bn.y - 8); caraAviao(c, t, { lado: -1, dama: false, r: 14, fase: 2 }); c.restore();
     } else {
-      for (let k = 0; k <= nivel; k++) {
-        c.save(); c.translate(W / 2 + 66 + (k - nivel / 2) * 27, by2 - 8);
-        caraAviao(c, t, { lado: -1, dama: false, r: 13, fase: k * 2 });
+      for (let q = 0; q <= nivel; q++) {
+        c.save(); c.translate(bn.x - 26 + (q - nivel / 2) * 27 + 26, bn.y - 8);
+        caraAviao(c, t, { lado: -1, dama: false, r: 13, fase: q * 2 });
         c.restore();
       }
     }
-    G.gfx.label(c, NIVEIS[nivel].nome, W / 2 + 92, by2 + 20, 17, '#fff', 'center', 'rgba(0,0,0,.45)');
+    G.gfx.label(c, NIVEIS[nivel].nome, bn.x, bn.y + 20, 17, '#fff', 'center', 'rgba(0,0,0,.45)');
 
-    // as estrelas ficam na linha dos botões, à esquerda: em cima chocavam com a faixa da vez
-    G.gfx.star(c, 36, by2, 18, '#ffd166', 0);
-    G.gfx.label(c, '' + G.state.stars, 64, by2 + 1, 30, '#b56b00');
+    // as estrelas ficam no canto de cima à esquerda, que nunca tem nada
+    G.gfx.star(c, g.estrela.x, g.estrela.y, 18, '#ffd166', 0);
+    G.gfx.label(c, '' + G.state.stars, g.estrela.x + 28, g.estrela.y + 1, 30, '#b56b00');
 
     if (fim) {
       c.fillStyle = 'rgba(255,255,255,' + Math.min(0.6, fim.t * 0.5) + ')';

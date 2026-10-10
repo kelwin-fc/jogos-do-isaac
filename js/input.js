@@ -3,7 +3,7 @@
   window.G = window.G || {};
   const I = {
     held: {}, just: {},
-    drag: { on: false, id: null, sx: 0, sy: 0, dx: 0, dy: 0 }
+    drag: { on: false, id: null, sx: 0, sy: 0, dx: 0, dy: 0, touch: false }
   };
 
   function press(name) { if (!I.held[name]) I.just[name] = true; I.held[name] = true; }
@@ -53,6 +53,7 @@
       I.drag.on = true; I.drag.id = e.pointerId;
       I.drag.sx = e.clientX; I.drag.sy = e.clientY;
       I.drag.dx = 0; I.drag.dy = 0;
+      I.drag.touch = e.pointerType !== 'mouse';
     });
     window.addEventListener('pointermove', function (e) {
       if (I.drag.on && e.pointerId === I.drag.id) {
@@ -68,7 +69,27 @@
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
     window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    // se o jogo for para segundo plano (notificação, trocar de app) a meio de um
+    // toque, o "largar" nunca chega: larga-se tudo para nada ficar preso a andar
+    function largaTudo() {
+      I.held = {};
+      I.drag.on = false; I.drag.dx = 0; I.drag.dy = 0;
+    }
+    window.addEventListener('blur', largaTudo);
+    window.addEventListener('pagehide', largaTudo);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) largaTudo(); });
   };
+
+  // Nos jogos com setas ◀ ▶ no ecrã, um dedo pousado no jogo NÃO serve de joystick:
+  // no telemóvel a mão da criança pousava no ecrã, escorregava um bocadinho e o boneco
+  // não parava de andar (Egito). Com o rato (computador) continua a dar para arrastar.
+  const setas = document.getElementById('btnLeft');
+  function arrastoConta() {
+    if (!I.drag.on) return false;
+    if (!I.drag.touch) return true;
+    return !(setas && setas.getClientRects().length);
+  }
 
   // Eixo -1..1 combinando teclado e arrasto (joystick virtual generoso).
   I.axis = function () {
@@ -77,7 +98,7 @@
     if (I.held.right) x += 1;
     if (I.held.up) y -= 1;
     if (I.held.down) y += 1;
-    if (I.drag.on) {
+    if (arrastoConta()) {
       x += Math.max(-1, Math.min(1, I.drag.dx / 70));
       y += Math.max(-1, Math.min(1, I.drag.dy / 70));
     }
