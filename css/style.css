@@ -108,6 +108,30 @@ body.scene-egito.cacador #btnHorn {
   left: calc(18px + env(safe-area-inset-left));
   background: rgba(255, 209, 102, 0.5);
 }
+/* PIKACHU: ◀ ▶ ⬆, o ataque com a cara do poder e o 🔄 (troca de poder) por cima do ◀ */
+body.scene-ash #btnLeft,
+body.scene-ash #btnRight,
+body.scene-ash #btnJump,
+body.scene-ash #btnFire { display: block; }
+body.scene-ash #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(255, 214, 10, 0.5);
+}
+/* a bola de campo de força 🛡️ (btnDoor) ao lado do ataque; apagadinha enquanto recarrega */
+body.scene-ash #btnDoor {
+  display: block;
+  right: calc(122px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  background: rgba(120, 210, 255, 0.55);
+}
+body.scene-ash.ash-campo-espera #btnDoor { opacity: 0.4; }
+/* ao alto não cabe ao lado do ⚡: vai para a fila de cima, entre o 🔄 e o ⬆ */
+@media (max-width: 560px) {
+  body.scene-ash #btnDoor { bottom: calc(126px + env(safe-area-inset-bottom)); }
+}
+/* lá dentro das casas e do hospital só se toca no ecrã: os botões escondem-se */
+body.scene-ash.ash-dentro .ctl { display: none !important; }
 /* MARVEL: ◀ ▶ ⬆ ⚡ e o 🦸 (troca de herói) por cima do ◀ */
 body.scene-marvel #btnLeft,
 body.scene-marvel #btnRight,
@@ -133,6 +157,28 @@ body.scene-marvel.marvel-porta #btnDoor {
 @media (max-width: 560px) {
   body.scene-marvel.marvel-porta #btnDoor {
     right: calc(18px + env(safe-area-inset-right));
+    bottom: calc(232px + env(safe-area-inset-bottom));
+  }
+}
+/* 🙋 chamar os Vingadores (por cima do ▶) e 🛡️ campo de força (ao lado do ⬆);
+   o campo fica apagadinho enquanto está ligado ou a recarregar */
+body.scene-marvel #btnChama {
+  display: block;
+  left: calc(122px + env(safe-area-inset-left));
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(255, 209, 102, 0.5);
+}
+body.scene-marvel #btnCampo {
+  display: block;
+  right: calc(122px + env(safe-area-inset-right));
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(120, 210, 255, 0.55);
+}
+body.scene-marvel.marvel-campo-espera #btnCampo { opacity: 0.4; }
+/* ao alto a fila do meio já não tem lugar: o 🙋 sobe para cima do 🦸 */
+@media (max-width: 560px) {
+  body.scene-marvel #btnChama {
+    left: calc(18px + env(safe-area-inset-left));
     bottom: calc(232px + env(safe-area-inset-bottom));
   }
 }
@@ -411,6 +457,8 @@ body.splash-on #splash { display: flex; }
   background: linear-gradient(#ffd23f 0 25%, #3bb273 25% 50%, #1e6fd9 50% 75%, #e3242b 75%);
   animation-delay: 4.55s;
 }
+/* Pikachu: amarelo com as bochechas vermelhas */
+#btnPlayAsh { background: radial-gradient(circle at 20% 42%, #ff4d4d 0 8%, transparent 9%), radial-gradient(circle at 80% 42%, #ff4d4d 0 8%, transparent 9%), linear-gradient(#ffe45c, #f4b400); animation-delay: 5.15s; }
 /* Pokémon: azul do logótipo, com uma pokébola desenhada em CSS no lugar do emoji */
 #btnPlayPokemon { background: linear-gradient(#3b7dd8, #1d3f8f); animation-delay: 4.85s; }
 .pokebola {

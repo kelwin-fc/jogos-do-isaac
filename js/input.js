@@ -12,7 +12,8 @@
   const KEYS = {
     ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right',
     ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down',
-    ' ': 'fire', b: 'horn', B: 'horn', '9': 'debug9'
+    ' ': 'fire', b: 'horn', B: 'horn', '9': 'debug9',
+    v: 'chama', V: 'chama', f: 'campo', F: 'campo'
   };
 
   window.addEventListener('keydown', function (e) {
@@ -45,6 +46,8 @@
     bindBtn('btnBrake', 'brake');
     bindBtn('btnDoor', 'door');
     bindBtn('btnRoad', 'road');
+    bindBtn('btnChama', 'chama');
+    bindBtn('btnCampo', 'campo');
 
     const cv = document.getElementById('game');
     cv.addEventListener('pointerdown', function (e) {

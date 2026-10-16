@@ -369,6 +369,7 @@
     const sw = o.anda ? Math.sin(o.fase) * 0.55 : 0;
     const noAr = o.noAr;
     let aF = -0.2 - sw * 0.8, aT = 0.2 + sw * 0.8;   // ângulos dos braços (frente / trás)
+    if (o.aceno > 0) aF = 0.25 - 3.05 * o.aceno;     // o braço à frente, de baixo para cima
     if (o.braco > 0) aF = -0.2 + (-1.35) * o.braco;
     if (o.algemas) { aF = 0.42; aT = -0.52; }
     if (o.cima) { aF = -2.75; aT = 2.75; }
@@ -584,6 +585,7 @@
   let transito, baloes, comidas, coracoes;
   let casas, ladroes, civis, avisoLadrao;
   let corrida, portaVisivel;
+  let equipa, chamada, campo, campoCd, campoEspera;
 
   /* as medalhas ficam guardadas: ganhar com os cinco heróis é para sempre */
   function carregaMedalhas() {
@@ -653,6 +655,8 @@
     // o carro de corrida está estacionado logo ali, ao pé de onde se começa
     corrida = { x: heroi.x - 240, y: 0, vx: 0, vy: 0, dir: 1, noChao: true, roda: 0, fogo: 0, bate: 0 };
     portaVisivel = false;
+    equipa = null; chamada = null; campo = null; campoCd = 0; campoEspera = false;
+    document.body.classList.remove('marvel-campo-espera');
     tiros = []; tirosMaus = []; carros = []; fx = []; raios = []; ondas = []; banners = [];
     transito = []; baloes = []; comidas = []; coracoes = [];
     ladroes = []; civis = []; avisoLadrao = 0;
@@ -688,6 +692,9 @@
   /* ---------- herói ---------- */
   function trocaHeroi(novo) {
     if (novo === hi || heroi.desmonta) return;
+    if (equipa) {                      // quem estava a jogar passa para a equipa, no mesmo sítio
+      for (const a of equipa) if (a.k === novo) { a.k = hi; a.x = heroi.x; a.y = heroi.y; a.cd = rnd(1, 2); }
+    }
     hi = novo;
     heroi.trocaT = 0.45;
     faisca(heroi.x, heroi.y - 50, '#ffd166', 16, 260);
@@ -918,6 +925,7 @@
     descanso = { t: 0 };
     h.desmonta = null; h.vx = 0; h.vy = 0; h.x = TORRE_X + 40; h.y = 0; h.noChao = true;
     h.carroApoio = null; h.invul = 3.6;
+    if (equipa) equipa.forEach(function (a, j) { a.x = h.x - 80 - j * 60; a.y = 0; });
     sfx('poof');
     faisca(h.x, h.y - 40, '#bde0fe', 20, 280);
     fala('Sem corações! Vamos descansar à Torre dos Vingadores.');
@@ -1013,6 +1021,163 @@
     // o herói vai lá dentro: tudo o que é dele (apanhar pinos, comida, prisão) segue o carro
     h.x = car.x; h.y = car.y; h.vx = car.vx; h.vy = car.vy; h.dir = car.dir; h.noChao = car.noChao;
     h.fase += Math.abs(car.vx) * dt * 0.02;
+  }
+
+  /* ---------- 5.ª ronda de pedidos do Isaac (2026-10-16) ----------
+     "o super-herói põe o braço à frente, de baixo para cima, e faz um sinal para os
+     outros: se ficar SIM os Vingadores vão com ele, se ficar NÃO não vão". E "um botão
+     que faz um campo de força: os maus não nos conseguem disparar, mas o meu escudo
+     (ou o que eu disparar) passa o risco e chega a eles". */
+  const CHAMA_BRACO = 0.55;            // quanto tempo o braço leva a subir
+  const CAMPO_DUR = 6, CAMPO_CD = 9;   // o campo dura 6 s e depois recarrega 9 s
+
+  function chamaVingadores() {
+    if (chamada || descanso || heroi.desmonta || vitoria) return;
+    chamada = { t: heroi.conduz ? CHAMA_BRACO : 0 };   // no carro não se vê o braço
+    sfx('horn');
+    fala('Vingadores! Vêm comigo?');
+  }
+
+  // o sinal por cima do herói, no ecrã: SIM (verde) e NÃO (vermelho), para tocar
+  function placa() {
+    const sc = escala(), h = heroi, L = hudLayout();
+    const sx = (h.x - cam.x) * sc;
+    const topo = h.conduz ? 80 : altura(defHeroi()) + 40;
+    const sy = chaoPx() + (h.y - topo - cam.y) * sc;
+    const w = 250, hh = 132;
+    const x = clamp(sx, w / 2 + 12, G.W - w / 2 - 12);
+    const y = clamp(sy - hh / 2 - 16, L.caraY + L.r + hh / 2 + 10, G.H - hh / 2 - 130);
+    return { x: x, y: y, w: w, h: hh, r: 34, sim: { x: x - 58, y: y + 22 }, nao: { x: x + 58, y: y + 22 }, px: sx, py: sy };
+  }
+
+  function respondeChamada(sim) {
+    const h = heroi;
+    chamada = null;
+    if (sim) {
+      if (equipa && equipa.every(function (a) { return !a.vai; })) {
+        fala('Já estamos todos juntos!');
+        return;
+      }
+      // os outros quatro vêm a voar lá de cima e põem-se atrás do herói
+      equipa = [];
+      for (let k = 0; k < HEROIS.length; k++) {
+        if (k === hi) continue;
+        const j = equipa.length;
+        equipa.push({ k: k, x: h.x - h.dir * (90 + j * 62), y: h.y - 620 - j * 70, vx: 0, dir: h.dir,
+          fase: 0, braco: 0, cd: rnd(1.2, 2.4), vai: false });
+      }
+      sfx('suit');
+      faisca(h.x, h.y - 120, '#ffd166', 18, 300);
+      fala('Sim! Os Vingadores vêm connosco!');
+      G.banner('🦸 SIM! Os Vingadores vêm contigo!', 2400);
+    } else {
+      if (equipa) {
+        equipa.forEach(function (a) { a.vai = true; });
+        fala('Está bem. Até logo, Vingadores!');
+        G.banner('👋 NÃO — os Vingadores ficam', 2200);
+      } else {
+        fala('Está bem, vou sozinho!');
+        G.banner('👋 NÃO — vais sozinho', 2000);
+      }
+      sfx('whoosh');
+    }
+  }
+
+  // um Vingador da equipa ataca com o poder dele, mas devagarinho (quem joga é o herói)
+  function equipaAtaca(a) {
+    const d = HEROIS[a.k];
+    const my = a.y - altura(d) * 0.58;
+    const alvo = alvoMaisPerto(a.x, my, a.dir, d.poder === 'smash' ? 300 : 560, true);
+    if (!alvo) return false;
+    if (Math.abs(alvo.x - (cam.x + vistaW() / 2)) > vistaW() / 2) return false;   // só no ecrã
+    a.dir = alvo.x >= a.x ? 1 : -1;
+    a.braco = 1;
+    const mx = a.x + a.dir * 26 * (d.grande || 1);
+    const ax = alvo.x - mx, ay = centroY(alvo) - my, n = Math.hypot(ax, ay) || 1;
+    if (d.poder === 'raio' || d.poder === 'teia' || d.poder === 'escudo') {
+      const v = d.poder === 'raio' ? 980 : 780;
+      tiros.push({ tipo: d.poder === 'escudo' ? 'escudinho' : d.poder, x: mx, y: my, vx: ax / n * v, vy: ay / n * v, vida: 1.0, alvo: alvo, t: 0 });
+      sfx(d.poder === 'raio' ? 'repulsor' : (d.poder === 'teia' ? 'teia' : 'escudo'));
+    } else if (d.poder === 'trovao') {
+      raios.push({ x1: mx, y1: my - 30, x2: alvo.x, y2: centroY(alvo), t: 0, seg: raioZig(mx, my - 30, alvo.x, centroY(alvo)) });
+      acerta(alvo, a.dir);
+      sfx('trovao');
+    } else {                           // o Hulk dá um pisão no chão
+      ondas.push({ x: a.x, y: a.y, t: 0 });
+      sfx('smash'); G.shake = Math.max(G.shake, 0.2);
+      for (const v of inimigos()) {
+        if (atacavel(v) && Math.abs(v.x - a.x) < 240 && Math.abs(v.y - a.y) < 180) acerta(v, v.x >= a.x ? 1 : -1);
+      }
+    }
+    return true;
+  }
+
+  function updateEquipa(dt) {
+    if (chamada) {
+      chamada.t += dt;
+      if (chamada.t > CHAMA_BRACO + 8) chamada = null;   // ninguém respondeu: fica tudo igual
+    }
+    if (!equipa) return;
+    const h = heroi;
+    for (let i = equipa.length - 1; i >= 0; i--) {
+      const a = equipa[i];
+      a.braco = Math.max(0, a.braco - dt * 4);
+      if (a.vai) {                     // disseram NÃO: acenam e vão-se embora a voar
+        a.y -= 700 * dt; a.dir = h.dir;
+        if (a.y < h.y - 900) equipa.splice(i, 1);
+      }
+    }
+    if (!equipa.length) { equipa = null; return; }
+    let j = 0;
+    for (const a of equipa) {
+      if (a.vai) continue;
+      const d = HEROIS[a.k];
+      const slot = (h.conduz ? 150 : 80) + j * 62; j++;
+      const alvoX = clamp(h.x - h.dir * slot, 40, MUNDO - 40);
+      const vmax = Math.max(d.vel, Math.abs(h.vx) * 1.15) + 60;
+      a.vx = clamp((alvoX - a.x) * 4, -vmax, vmax);
+      a.x += a.vx * dt;
+      a.y += (h.y - a.y) * Math.min(1, dt * 3.5);
+      if (a.braco <= 0) a.dir = Math.abs(a.vx) > 25 ? (a.vx > 0 ? 1 : -1) : h.dir;
+      a.fase += Math.abs(a.vx) * dt * 0.045;
+      a.cd -= dt;
+      if (a.cd <= 0) {
+        if (!vitoria && !descanso && Math.abs(a.y - h.y) < 60 && equipaAtaca(a)) a.cd = rnd(2.6, 3.8);
+        else a.cd = 0.4;
+      }
+    }
+  }
+
+  // o campo de força: um risco de energia à frente do herói, do chão até bem lá em cima
+  function ligaCampo() {
+    if (campo || campoCd > 0 || descanso || vitoria) return;
+    const h = heroi;
+    const x = h.x + h.dir * campoDist();
+    campo = { t: 0, lado: h.dir, x: x, x0: x, bates: [] };
+    sfx('suit'); sfx('escudo');
+    fala('Campo de força!');
+    G.banner('🛡️ Campo de força!', 1600);
+  }
+  function campoDist() { return heroi.conduz ? CORRIDA_W / 2 + 50 : 95; }
+  function campoTopo() { return heroi.y - 340; }
+  // um tiro passou o risco entre o frame anterior (xAntes) e este?
+  function passaRisco(xAntes, x) {
+    return (xAntes - campo.x0) * (x - campo.x) <= 0 || Math.abs(x - campo.x) < 14;
+  }
+
+  function updateCampo(dt) {
+    campoCd = Math.max(0, campoCd - dt);
+    if (campo) {
+      const h = heroi;
+      campo.t += dt;
+      campo.lado += (h.dir - campo.lado) * Math.min(1, dt * 10);  // fica sempre à frente
+      campo.x0 = campo.x;
+      campo.x = h.x + campo.lado * campoDist();
+      for (let i = campo.bates.length - 1; i >= 0; i--) { campo.bates[i].t += dt; if (campo.bates[i].t > 0.4) campo.bates.splice(i, 1); }
+      if (campo.t >= CAMPO_DUR || descanso) { campo = null; campoCd = CAMPO_CD; sfx('poof'); }
+    }
+    const espera = !!campo || campoCd > 0;
+    if (espera !== campoEspera) { campoEspera = espera; document.body.classList.toggle('marvel-campo-espera', espera); }
   }
 
   function criaComidas() {
@@ -1687,7 +1852,9 @@
           t.vx = ax / n * 900; t.vy = ay / n * 900;
           if (n < 40 || t.vida <= 0 || defHeroi().poder !== 'escudo') { tiros.splice(i, 1); continue; }
         }
+        const ex0 = t.x;
         t.x += t.vx * dt; t.y += t.vy * dt;
+        if (campo && !t.passou && t.y > campoTopo() && passaRisco(ex0, t.x)) { t.passou = true; faisca(campo.x, t.y, '#bde0fe', 5, 140); }
         for (const v of inimigos()) {
           if (!atacavel(v) || t.acertou.indexOf(v) >= 0) continue;
           if (tocaAlvo(v, t.x, t.y, 44)) {
@@ -1703,7 +1870,11 @@
         t.vx += (ax / n * sp - t.vx) * Math.min(1, dt * 6);
         t.vy += (ay / n * sp - t.vy) * Math.min(1, dt * 6);
       }
+      const bx0 = t.x;
       t.x += t.vx * dt; t.y += t.vy * dt;
+      if (t.tipo === 'escudinho') t.t += dt;
+      // os tiros dos heróis atravessam o campo de força (só fazem um brilhozinho)
+      if (campo && !t.passou && t.y > campoTopo() && passaRisco(bx0, t.x)) { t.passou = true; faisca(campo.x, t.y, '#bde0fe', 5, 140); }
       let bateu = false;
       for (const v of inimigos()) {
         if (!atacavel(v)) continue;
@@ -1719,7 +1890,17 @@
       const t = tirosMaus[i];
       t.vida -= dt; t.rot += dt * 6;
       if (t.tipo === 'abobora') t.vy += 260 * dt;
+      const mx0 = t.x;
       t.x += t.vx * dt; t.y += t.vy * dt;
+      // o campo de força: os tiros dos maus não passam o risco
+      if (campo && t.y > campoTopo() && t.y < 14 && passaRisco(mx0, t.x)) {
+        faisca(campo.x, t.y, '#8fd8ff', 9, 220);
+        faisca(campo.x, t.y, t.cor, 4, 160);
+        campo.bates.push({ y: t.y, t: 0 });
+        sfx('escudo');
+        tirosMaus.splice(i, 1);
+        continue;
+      }
       const hy = h.y - altura(defHeroi()) * 0.5;
       if (h.conduz) {                  // de carro, o alvo é o carro todo
         if (h.invul <= 0 && !vitoria && Math.abs(t.x - corrida.x) < CORRIDA_W / 2 && t.y > corrida.y - 78 && t.y < corrida.y + 4) {
@@ -1792,6 +1973,14 @@
     }
     const I = G.input;
     if (I.justPressed('horn')) trocaHeroi((hi + 1) % HEROIS.length);
+    if (I.justPressed('chama')) chamaVingadores();
+    if (I.justPressed('campo')) ligaCampo();
+    // o sinal do SIM / NÃO: tocar num dos dois (o toque não serve para mais nada)
+    if (I.tap && chamada && chamada.t >= CHAMA_BRACO) {
+      const pl = placa();
+      if (Math.hypot(I.tap.x - pl.sim.x, I.tap.y - pl.sim.y) < pl.r + 10) { respondeChamada(true); I.tap = null; }
+      else if (Math.hypot(I.tap.x - pl.nao.x, I.tap.y - pl.nao.y) < pl.r + 10) { respondeChamada(false); I.tap = null; }
+    }
     if (I.tap) {
       const q = caraRect();
       for (let k = 0; k < HEROIS.length; k++) {
@@ -1801,6 +1990,8 @@
     if (I.justPressed('debug9')) desmonta();
 
     updateHeroi(dt);
+    updateEquipa(dt);
+    updateCampo(dt);
     if (!heroi.conduz && (Math.abs(corrida.vx) > 1 || !corrida.noChao)) {   // deixado a andar: trava sozinho
       corrida.vx *= Math.max(0, 1 - dt * 3);
       corrida.vy += GRAV * dt; corrida.y = Math.min(0, corrida.y + corrida.vy * dt);
@@ -2445,6 +2636,8 @@
       c.beginPath(); c.arc(0, 0, 8, 0, TAU); c.stroke();
     } else if (t.tipo === 'escudo') {
       escudo(c, 0, 0, 17, t.t * 14);
+    } else if (t.tipo === 'escudinho') {   // o escudo do Capitão quando ele vem na equipa
+      escudo(c, 0, 0, 14, t.t * 14);
     }
     c.restore();
   }
@@ -2624,7 +2817,8 @@
     boneco(c, d, {
       t: t, dir: h.dir, fase: h.fase, anda: h.noChao && Math.abs(h.vx) > 30, braco: h.braco,
       noAr: !h.noChao, cima: !!h.carrega, partes: h.desmonta ? h.desmonta.partes : null,
-      jato: h.jato, semEscudo: escudoFora
+      jato: h.jato, semEscudo: escudoFora,
+      aceno: chamada ? Math.min(1, chamada.t / CHAMA_BRACO) : 0
     });
     c.restore();
     if (descanso) {                    // a dormir: Zzz por cima da cabeça
@@ -2645,6 +2839,86 @@
       boneco(c, v.def, { t: t, dir: 1, fase: 0, anda: false, braco: 0, tonto: true, algemas: true });
       c.restore();
     }
+  }
+
+  // um Vingador da equipa (a voar quando não está à altura do herói)
+  function desenhaAmigo(c, a, t) {
+    const d = HEROIS[a.k], h = heroi;
+    const noAr = a.vai || h.conduz || Math.abs(a.y - h.y) > 10 || !h.noChao;
+    c.save(); c.translate(a.x, a.y); c.scale(FIG, FIG);
+    boneco(c, d, {
+      t: t, dir: a.dir, fase: a.fase, anda: !noAr && Math.abs(a.vx) > 30, braco: a.braco,
+      noAr: noAr, jato: noAr && d.voa ? 1 : 0, aceno: a.vai ? 0.75 + Math.sin(t * 12) * 0.2 : 0
+    });
+    c.restore();
+  }
+
+  // o risco de energia azul, do chão até lá em cima, que pisca quando está a acabar
+  function desenhaCampo(c, t) {
+    const x = campo.x, y0 = campoTopo(), y1 = 6;
+    let al = Math.min(1, campo.t / 0.25);
+    if (CAMPO_DUR - campo.t < 1.5 && Math.floor(t * 8) % 2) al *= 0.35;
+    c.save();
+    c.globalAlpha = al;
+    const g = c.createLinearGradient(x - 38, 0, x + 38, 0);
+    g.addColorStop(0, 'rgba(67,97,238,0)');
+    g.addColorStop(0.35, 'rgba(76,201,240,.55)');
+    g.addColorStop(0.5, 'rgba(120,230,255,.8)');
+    g.addColorStop(0.65, 'rgba(76,201,240,.55)');
+    g.addColorStop(1, 'rgba(67,97,238,0)');
+    c.fillStyle = g; c.fillRect(x - 38, y0, 76, y1 - y0);
+    c.strokeStyle = 'rgba(29,78,216,.7)'; c.lineWidth = 2;
+    c.strokeRect(x - 14, y0, 28, y1 - y0);
+    c.fillStyle = 'rgba(232,253,255,.9)';           // faíscas que sobem pelo risco
+    for (let k = 0; k < 9; k++) {
+      const yy = y1 - ((t * 160 + k * 41) % (y1 - y0));
+      c.fillRect(x - 10 + Math.sin(k * 2.3 + t * 3) * 6, yy, 20, 3);
+    }
+    c.strokeStyle = 'rgba(232,253,255,.95)'; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
+    c.fillStyle = '#8fd8ff';
+    c.beginPath(); c.arc(x, y0, 8, 0, TAU); c.fill();
+    for (const b of campo.bates) {                  // onde bateu um tiro dos maus: uma ondinha
+      c.strokeStyle = 'rgba(143,216,255,' + (1 - b.t / 0.4) + ')'; c.lineWidth = 4;
+      c.beginPath(); c.ellipse(x, b.y, 10 + b.t * 50, 18 + b.t * 70, 0, 0, TAU); c.stroke();
+    }
+    c.restore();
+  }
+
+  // o sinal do SIM / NÃO por cima do herói (em coordenadas do ecrã)
+  function certo(c, x, y, s) {
+    c.beginPath(); c.moveTo(x - s * 0.5, y); c.lineTo(x - s * 0.12, y + s * 0.4); c.lineTo(x + s * 0.55, y - s * 0.42); c.stroke();
+  }
+  function errado(c, x, y, s) {
+    c.beginPath(); c.moveTo(x - s * 0.4, y - s * 0.4); c.lineTo(x + s * 0.4, y + s * 0.4);
+    c.moveTo(x + s * 0.4, y - s * 0.4); c.lineTo(x - s * 0.4, y + s * 0.4); c.stroke();
+  }
+  function desenhaPlaca(c, t) {
+    const pl = placa();
+    const k = Math.min(1, (chamada.t - CHAMA_BRACO) / 0.2);
+    c.save();
+    c.translate(pl.x, pl.y); c.scale(k, k); c.translate(-pl.x, -pl.y);
+    // o bico a apontar para o herói
+    const bx = clamp(pl.px, pl.x - pl.w / 2 + 30, pl.x + pl.w / 2 - 30);
+    c.fillStyle = '#fff8e1'; c.strokeStyle = '#22223b'; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(bx - 16, pl.y + pl.h / 2 - 2); c.lineTo(bx + 16, pl.y + pl.h / 2 - 2);
+    c.lineTo(bx, pl.y + pl.h / 2 + 20); c.closePath(); c.fill(); c.stroke();
+    rr(c, pl.x - pl.w / 2, pl.y - pl.h / 2, pl.w, pl.h, 18); c.fill(); c.stroke();
+    let j = 0;                                     // as caras dos Vingadores que vinham
+    HEROIS.forEach(function (d, kk) {
+      if (kk === hi) return;
+      cabecinha(c, d, pl.x + (j - 1.5) * 44, pl.y - pl.h / 2 + 32, 1.25 / (d.grande || 1) * (d.id === 'hulk' ? 1.2 : 1), t, {});
+      j++;
+    });
+    const pulsa = 1 + Math.sin(t * 6) * 0.05;
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const [b, cor, sim] of [[pl.sim, '#2b9348', true], [pl.nao, '#d62828', false]]) {
+      c.fillStyle = cor; c.strokeStyle = '#22223b'; c.lineWidth = 3;
+      c.beginPath(); c.arc(b.x, b.y, pl.r * pulsa, 0, TAU); c.fill(); c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 8;
+      if (sim) certo(c, b.x, b.y, 34); else errado(c, b.x, b.y, 30);
+    }
+    c.restore();
   }
 
   /* as três linhas do HUD: vilões, corações e as caras dos heróis (tocáveis) */
@@ -2754,9 +3028,9 @@
       // baixinhos (telemóvel deitado) não há altura livre nas bordas, e a seta passa
       // para dentro da coluna dos botões
       const baixo = G.H < 520;
-      const x = esq ? (baixo ? 142 : 34) : W - (baixo ? 142 : 34);
+      const x = esq ? (baixo ? 252 : 34) : W - (baixo ? 252 : 34);
       const y0 = baixo ? clamp(cp + (a.y - cam.y) * sc, 150, cp - 34)
-        : clamp(cp + (a.y - cam.y) * sc, 176, Math.max(176, Math.min(cp - 40, G.H - (portaVisivel && G.W <= 560 ? 340 : 244))));
+        : clamp(cp + (a.y - cam.y) * sc, 176, Math.max(176, Math.min(cp - 40, G.H - (G.W <= 560 ? 340 : 244))));
       let y = y0;
       const lista = usados[esq ? 'e' : 'd'];
       for (let tent = 0; tent < 6 && lista.some(function (u) { return Math.abs(u - y) < 48; }); tent++) y -= 48;
@@ -2798,7 +3072,9 @@
     for (const p of civis) if (p.x > x0 - 100 && p.x < x1 + 100) desenhaCivil(c, p, t);
     for (const l of ladroes) if (l.x > x0 - 100 && l.x < x1 + 100) desenhaLadrao(c, l, t);
     for (const v of viloes) if (v.x > x0 - 100 && v.x < x1 + 100) desenhaVilao(c, v, t);
+    if (equipa && !vitoria) for (const a of equipa) desenhaAmigo(c, a, t);
     desenhaHeroi(c, t);
+    if (campo) desenhaCampo(c, t);
     if (vitoria) {                     // os outros heróis vêm festejar à porta da prisão
       HEROIS.forEach(function (d, k) {
         if (k === hi) return;
@@ -2830,6 +3106,7 @@
     c.restore();
     setas(c, t);
     hud(c, t);
+    if (chamada && chamada.t >= CHAMA_BRACO) desenhaPlaca(c, t);
   };
 
   S.debug = function () {
@@ -2848,13 +3125,16 @@
       coracoes: coracoes.length, emCima: !!heroi.carroApoio,
       conduz: heroi.conduz, corrida: Math.round(corrida.x) + ':' + Math.round(corrida.vx),
       veiculos: viloes.filter(function (v) { return v.veiculo; }).map(function (v) { return v.def.id + ':' + v.veiculo.hp; }),
-      comida: comidas.filter(function (k) { return k.pronto; }).length, camX: Math.round(cam.x), camY: Math.round(cam.y)
+      comida: comidas.filter(function (k) { return k.pronto; }).length,
+      equipa: equipa ? equipa.map(function (a) { return HEROIS[a.k].id + (a.vai ? ':vai' : ''); }) : null,
+      chamada: !!chamada, campo: campo ? +campo.t.toFixed(1) : null, campoCd: +campoCd.toFixed(1), camX: Math.round(cam.x), camY: Math.round(cam.y)
     };
   };
   // para testes: pôr o herói num sítio e mexer nos vilões
   S.api = {
     heroi: function () { return heroi; }, viloes: function () { return viloes; },
     corrida: function () { return corrida; },
+    placa: placa, equipa: function () { return equipa; }, campo: function () { return campo; },
     troca: trocaHeroi, prisaoX: PRISAO_X,
     boneco: boneco, herois: HEROIS, viloesDef: VILOES, policia: POLICIA,
     mundo: function () { return { transito: transito, baloes: baloes, comidas: comidas, coracoes: coracoes,
