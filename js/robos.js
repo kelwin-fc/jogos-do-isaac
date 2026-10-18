@@ -17,13 +17,25 @@
      das teias e defende-se com os braços. A gosma suja o nosso robô: com gosma a mais
      ficamos COLADOS uns segundos (abana-se com qualquer botão para sair mais depressa).
      As nossas teias também apanham as bolas de gosma no ar.
-   - Não há derrota: ficar colado só dá tempo ao Venom para rasgar teias. */
+   - Não há derrota: ficar colado só dá tempo ao Venom para rasgar teias.
+
+   2.ª ronda (pedido do Isaac: "mais difícil, que está super fácil; com pessoas, de dia,
+   e muitas, muitas ruas e passadeiras"): a luta passou para uma cidade DE DIA com uma
+   rua atrás da outra (prédios, lojas, ruas que vão para o fundo, passadeiras e
+   semáforos de peões). Há PESSOAS a passear, a atravessar nas passadeiras quando o
+   boneco está verde e a fugir dos robôs (ninguém se magoa: elas afastam-se sempre).
+   Cada vez que o Venom fica embrulhado, solta-se e FOGE para a rua seguinte, e com
+   muitas teias em cima também foge a meio da luta: é preciso ir atrás dele. E está
+   bem mais difícil: as teias colam menos, ele rasga-as mais depressa, salta e
+   defende-se mais, ataca mais vezes (gosma às duas e às três) e suja mais. */
 (function () {
   window.G = window.G || {};
   const TAU = Math.PI * 2;
   const S = {};
 
-  const ARENA = 1900;
+  const SEG = 2600;             // cada ronda é uma rua (um pedaço de cidade)
+  const BLOCO = 760, VAO = 190; // um quarteirão e a rua que vai para o fundo
+  const CORES = ['#f4a261', '#e9c46a', '#2a9d8f', '#90be6d', '#f28482', '#84a59d', '#bde0fe', '#cdb4db', '#ffafcc'];
   const GRAV = 2100, JUMPV = 980;
   const VEL = 300;
   const TEIA_V = 820, REDE_V = 620;
@@ -31,6 +43,15 @@
   const ALTO = 240;             // altura do robô
 
   let p, v, tiros, gotas, sparks, puffs, textos, camX, fase, faseT, ronda, carga, superAvisado, venc;
+  let pessoas, nuvens, tempo, falasT;
+
+  // limites da rua desta ronda: o Venom fica nela; o Spidey pode vir da anterior
+  function lo() { return (ronda - 1) * SEG; }
+  function hi() { return lo() + SEG; }
+  function limP() { return [Math.max(110, lo() - SEG + 110), hi() - 110]; }
+  function limV() { return [lo() + 110, hi() - 110]; }
+  function zebraX(i) { return i * BLOCO + BLOCO - VAO / 2; }
+  function verde(i) { return ((tempo + h01(i * 3.7) * 9) % 9) < 4.5; }
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function h01(n) { const s = Math.sin(n * 127.1) * 43758.5; return s - Math.floor(s); }
@@ -48,9 +69,13 @@
   S.enter = function () {
     p = { x: 620, alt: 0, vy: 0, vx: 0, dir: 1, walk: 0, cdTeia: 0, cdSoco: 0, soco: 0, gosma: 0, colado: 0, pisca: 0, tiro: 0 };
     v = { x: 1200, alt: 0, vy: 0, vx: 0, dir: -1, walk: 0, teias: 0, cd: 1.6, tent: 0, lat: 0, reage: 0, bloq: 0, pisca: 0,
-      modo: 'longe', modoT: 3, ri: 0 };
+      modo: 'longe', modoT: 3, ri: 0, fogeCd: 6 };
     tiros = []; gotas = []; sparks = []; puffs = []; textos = [];
     camX = 0; fase = 'intro'; faseT = 0; ronda = 1; carga = 0; superAvisado = false; venc = 0;
+    pessoas = []; tempo = 0; falasT = 0;
+    nuvens = [];
+    for (let i = 0; i < 6; i++) nuvens.push({ x: Math.random(), y: 0.08 + Math.random() * 0.3, s: 30 + Math.random() * 40 });
+    for (let i = 0; i < 12; i++) novaPessoa(rnd(0, 1700));
     superBotao(false);
     G.banner('Spidey, ao robô! 🕷️🤖', 2200);
     fala('Spidey, ao robô! Atira teias ao Venom!');
@@ -72,6 +97,63 @@
   }
   function texto(txt, x, alt, cor) { textos.push({ txt: txt, x: x, alt: alt, t: 0, cor: cor || '#ffd60a' }); }
 
+  /* ---------- as pessoas da cidade ---------- */
+  function novaPessoa(x) {
+    const crianca = Math.random() < 0.3;
+    pessoas.push({
+      x: x, z: Math.random() < 0.6 ? 0 : 1, zAlvo: -1, vx: (Math.random() < 0.5 ? -1 : 1) * rnd(40, 75),
+      cor: CORES[Math.floor(Math.random() * CORES.length)], calca: ['#264653', '#3d405b', '#6d597a', '#1d3557'][Math.floor(Math.random() * 4)],
+      pele: ['#ffd9b3', '#f1c27d', '#c68642', '#8d5524'][Math.floor(Math.random() * 4)],
+      cabelo: ['#3b2a20', '#000000', '#e9c46a', '#b5651d', '#7f7f7f'][Math.floor(Math.random() * 5)],
+      crianca: crianca, alt: crianca ? 0.72 : 1, estado: 'anda', medo: 0, t: Math.random() * 9, diz: 0, txt: '', festa: 0, ultZ: -1
+    });
+  }
+
+  function pessoasUpdate(dt, W) {
+    const robos = [p, v];
+    for (let i = pessoas.length - 1; i >= 0; i--) {
+      const q = pessoas[i];
+      q.t += dt; q.diz = Math.max(0, q.diz - dt); q.festa = Math.max(0, q.festa - dt);
+      if (q.x < camX - 900 || q.x > camX + W + 900) { pessoas.splice(i, 1); continue; }
+      if (q.estado === 'atravessa') {
+        q.z += Math.sign(q.zAlvo - q.z) * 0.32 * dt;
+        if (Math.abs(q.z - q.zAlvo) < 0.02) { q.z = q.zAlvo; q.estado = 'anda'; }
+        continue;
+      }
+      // um robô perto: foge para o outro lado (nunca é apanhada por nada)
+      let perto = null;
+      for (const r of robos) if (Math.abs(r.x - q.x) < 220) perto = r;
+      if (perto) {
+        if (q.medo <= 0 && falasT <= 0 && Math.random() < 0.5) {
+          q.diz = 1.3; falasT = 1.6;
+          q.txt = ['Ai! 😱', 'Vai, Spidey! 🕷️', 'Socorro! 😮', 'Uau, robôs! 🤩'][Math.floor(Math.random() * 4)];
+        }
+        q.medo = 0.8;
+        q.vx = Math.sign(q.x - perto.x || 1) * (q.crianca ? 170 : 150);
+      } else if (q.medo > 0) {
+        q.medo -= dt;
+        if (q.medo <= 0) q.vx = Math.sign(q.vx) * rnd(40, 75);
+      }
+      q.x += q.vx * dt;
+      // nas passadeiras, com o boneco verde, às vezes atravessam para o outro passeio
+      if (q.medo <= 0) {
+        const iz = Math.round((q.x - (BLOCO - VAO / 2)) / BLOCO);
+        if (Math.abs(q.x - zebraX(iz)) < 5 && q.ultZ !== iz && verde(iz)) {
+          q.ultZ = iz;
+          if (Math.random() < 0.6) { q.estado = 'atravessa'; q.zAlvo = q.z < 0.5 ? 1 : 0; }
+        }
+      }
+    }
+    // a rua nunca fica vazia: aparecem pessoas fora do ecrã
+    let vistas = 0;
+    for (const q of pessoas) if (q.x > camX && q.x < camX + W) vistas++;
+    if (vistas < 12 && pessoas.length < 30) novaPessoa(Math.random() < 0.5 ? camX - 120 : camX + W + 120);
+  }
+
+  function festaPessoas() {
+    for (const q of pessoas) if (Math.abs(q.x - p.x) < 1400) q.festa = 2.5;
+  }
+
   // nível da ronda: o Venom fica mais rápido, ataca mais e rasga teias mais depressa
   function nivel() { return Math.min(6, ronda - 1); }
 
@@ -91,6 +173,7 @@
     G.audio.sfx('tada'); G.shake = 0.4;
     spark(v.x, 140, 30, '#ffffff');
     G.banner('O Venom ficou embrulhado! 🕸️', 3000);
+    festaPessoas();
     fala('Boa! O Venom ficou todo embrulhado nas teias!');
   }
 
@@ -101,8 +184,8 @@
     G.audio.sfx('gulp'); G.shake = Math.max(G.shake, 0.18);
     puff(p.x, 150, 6, '#2b2440');
     if (p.gosma >= 100) {
-      p.colado = 2.6; p.gosma = 0;
-      v.teias = Math.max(0, v.teias - 25);      // enquanto estamos colados ele rasga teias
+      p.colado = 3.0; p.gosma = 0;
+      v.teias = Math.max(0, v.teias - 30);      // enquanto estamos colados ele rasga teias
       G.banner('Ficaste colado! Abana-te! ◀ ▶', 2200);
       G.audio.sfx('brrr');
     }
@@ -149,9 +232,14 @@
         v.teias = 0; venc = 0; v.cd = 1.4; v.tent = 0; v.lat = 0;
         G.audio.sfx('quebra'); G.audio.sfx('roar'); G.shake = 0.35;
         for (let k = 0; k < 18; k++) sparks.push({ x: v.x, alt: rnd(40, 220), vx: rnd(-420, 420), vy: rnd(100, 420), t: 0, life: rnd(0.5, 1), col: '#ffffff' });
-        G.banner('O Venom soltou-se! Ronda ' + ronda + ' 🤖', 2400);
+        // e foge, com os jatos, para a rua seguinte: é preciso ir atrás dele
+        v.x = lo() + 1500; v.alt = 1100; v.vy = 0; v.vx = 0; v.fogeCd = 7;
+        G.banner('O Venom fugiu para outra rua! Vai atrás ▶', 2600);
+        fala('O Venom fugiu! Vai atrás dele!');
       }
     }
+
+    tempo += dt; falasT = Math.max(0, falasT - dt);
 
     // ---- o nosso robô ----
     const podeMexer = fase === 'luta' && p.colado <= 0;
@@ -189,17 +277,19 @@
         if (r.vy < -700) { G.shake = Math.max(G.shake, 0.15); puff(r.x, 0, 5, '#9aa0b5'); }
         r.alt = 0; r.vy = 0;
       }
-      r.x = Math.max(110, Math.min(ARENA - 110, r.x));
+      const lim = r === p ? limP() : limV();
+      r.x = Math.max(lim[0], Math.min(lim[1], r.x));
     }
     // não se atravessam (se um salta por cima, passa)
     const dd = v.x - p.x;
     if (Math.abs(dd) < SEPARA && Math.abs(v.alt - p.alt) < 170) {
       const s = Math.sign(dd) || 1, falta = (SEPARA - Math.abs(dd)) / 2;
       p.x -= s * falta; v.x += s * falta;
-      if (p.x < 110) { v.x += 110 - p.x; p.x = 110; }
-      if (v.x > ARENA - 110) { p.x -= v.x - (ARENA - 110); v.x = ARENA - 110; }
-      if (v.x < 110) { p.x += 110 - v.x; v.x = 110; }
-      if (p.x > ARENA - 110) { v.x -= p.x - (ARENA - 110); p.x = ARENA - 110; }
+      const lp = limP(), lv = limV();
+      if (p.x < lp[0]) { v.x += lp[0] - p.x; p.x = lp[0]; }
+      if (v.x > lv[1]) { p.x -= v.x - lv[1]; v.x = lv[1]; }
+      if (v.x < lv[0]) { p.x += lv[0] - v.x; v.x = lv[0]; }
+      if (p.x > lp[1]) { v.x -= p.x - lp[1]; p.x = lp[1]; }
     }
     p.dir = v.x >= p.x ? 1 : -1;
     v.dir = -p.dir;
@@ -209,7 +299,7 @@
       const s = tiros[i];
       s.t += dt;
       s.x += s.dir * (s.rede ? REDE_V : TEIA_V) * dt;
-      if (Math.abs(s.x - s.x0) > 980 || s.x < -50 || s.x > ARENA + 50) { tiros.splice(i, 1); continue; }
+      if (Math.abs(s.x - s.x0) > 980) { tiros.splice(i, 1); continue; }
       // as teias apanham as bolas de gosma no ar
       let apanhou = false;
       for (let j = gotas.length - 1; j >= 0; j--) {
@@ -229,8 +319,8 @@
           poeTeias(1.5, s.x, s.alt);
           G.audio.sfx('escudo'); texto('CLANG!', v.x, v.alt + 240, '#dbe4ff');
         } else {
-          poeTeias(s.rede ? 26 : 5.5, s.x, s.alt);
-          carga = Math.min(1, carga + (s.rede ? 0 : 0.11));
+          poeTeias(s.rede ? 22 : 4.5, s.x, s.alt);
+          carga = Math.min(1, carga + (s.rede ? 0 : 0.09));
           G.audio.sfx(s.rede ? 'trovao' : 'pop');
           if (s.rede) { G.shake = 0.4; texto('ZAP!', v.x, v.alt + 250, '#ffffff'); v.vx = s.dir * 300; }
         }
@@ -254,19 +344,32 @@
       const preso = v.teias / 100;                  // as teias pesam-lhe
       const rapido = (1 + n * 0.08) * (1 - preso * 0.55);
       // rasga as teias aos poucos
-      v.teias = Math.max(0, v.teias - (3.8 + n * 0.5) * dt);
+      v.teias = Math.max(0, v.teias - (4.6 + n * 0.6) * dt);
+      const dist0 = Math.abs(v.x - p.x);
+      const longeDemais = dist0 > vw() * 0.8;      // longe: vem ao nosso encontro, mas ainda não ataca
+
+      // com muitas teias em cima foge a voar pela rua fora
+      v.fogeCd -= dt;
+      if (!longeDemais && v.teias > 55 && v.fogeCd <= 0 && v.alt <= 0 && Math.random() < dt * 0.8) {
+        v.fogeCd = rnd(6, 9);
+        const lv = limV(), paraLa = (lv[1] - v.x > v.x - lv[0]) ? 1 : -1;
+        v.vy = JUMPV * 1.15; v.vx = paraLa * 1700;
+        G.audio.sfx('whoosh');
+        G.banner('O Venom está a fugir! Vai atrás! 🏃', 1600);
+      }
 
       v.modoT -= dt;
       if (v.modoT <= 0) { v.modo = v.modo === 'perto' ? 'longe' : 'perto'; v.modoT = rnd(2.4, 4.2); }
       const dist = Math.abs(v.x - p.x);
-      const quer = v.modo === 'perto' ? 220 : 520;
+      // de longe atira gosma, mas nunca tão longe que saia do ecrã (telemóvel ao alto)
+      const quer = v.modo === 'perto' ? 220 : Math.min(520, vw() * 0.6);
       let anda = 0;
       if (v.tent <= 0 && v.lat <= 0) {
         if (dist > quer + 40) anda = 1;     // aproxima-se
         else if (dist < quer - 60 && v.modo === 'longe') anda = -1;   // afasta-se
       }
       // "anda" em coordenadas do Venom: +1 = para a frente (para o Spidey)
-      v.x += anda * v.dir * 230 * rapido * dt;
+      v.x += anda * v.dir * 260 * rapido * dt;
       if (anda !== 0) v.walk += dt * 7;
 
       // ESQUIVAR e DEFENDER as teias que vêm a caminho
@@ -274,16 +377,16 @@
         for (const s of tiros) {
           const vem = (v.x - s.x) * s.dir;
           if (vem < 60 || vem > 330) continue;
-          const pSalta = Math.min(0.6, 0.28 + n * 0.06), pBloq = Math.min(0.35, 0.18 + n * 0.04);
+          const pSalta = Math.min(0.7, 0.38 + n * 0.06), pBloq = Math.min(0.4, 0.22 + n * 0.04);
           const r = Math.random();
           if (r < pSalta && v.alt <= 0) { v.vy = JUMPV * (0.95 + Math.random() * 0.12); G.audio.sfx('hop'); puff(v.x, 0, 6, '#7b2cbf'); }
           else if (r < pSalta + pBloq && !s.rede) { v.bloq = 0.85; }
-          v.reage = rnd(0.9, 1.4) - n * 0.06;
+          v.reage = Math.max(0.35, rnd(0.6, 1.0) - n * 0.05);
           break;
         }
       }
       // às vezes salta para cima de nós por gosto
-      if (v.alt <= 0 && v.tent <= 0 && Math.random() < dt * (0.12 + n * 0.03)) { v.vy = JUMPV * 0.9; v.vx = v.dir * 300; }
+      if (!longeDemais && v.alt <= 0 && v.tent <= 0 && Math.random() < dt * (0.2 + n * 0.04)) { v.vy = JUMPV * 0.9; v.vx = v.dir * 300; }
 
       // ataques
       v.cd -= dt;
@@ -293,16 +396,16 @@
           v.lat = 0.32;
           G.audio.sfx('whoosh');
           if (Math.abs(v.x - p.x) < 330 && p.alt < 170) {
-            sujaRobo(16 + n * 2);
+            sujaRobo(20 + n * 3);
             p.vx = v.dir * 520;
             texto('SPLAT!', p.x, p.alt + 230, '#c77dff');
           }
         }
       }
       v.lat = Math.max(0, v.lat - dt);
-      if (v.cd <= 0 && v.tent <= 0 && v.lat <= 0 && v.bloq <= 0) {
-        v.cd = Math.max(0.7, rnd(1.3, 1.9) - n * 0.12) / (1 - preso * 0.4);
-        if (dist < 300) { v.tent = 0.45; v.ri = 0.6; }
+      if (v.cd <= 0 && v.tent <= 0 && v.lat <= 0 && v.bloq <= 0 && !longeDemais) {
+        v.cd = Math.max(0.55, rnd(0.95, 1.4) - n * 0.1) / (1 - preso * 0.4);
+        if (dist < 300) { v.tent = 0.38; v.ri = 0.6; }
         else {
           // bola de gosma em arco, apontada a onde estamos
           const T = rnd(0.75, 1.0);
@@ -310,9 +413,11 @@
           const alvoX = p.x + rnd(-40, 40), alvoA = p.alt + 120;
           gotas.push({ x: x0, alt: a0, vx: (alvoX - x0) / T, vy: (alvoA - a0) / T + 0.5 * 1400 * T, t: 0 });
           G.audio.sfx('gulp');
-          if (n >= 2 && Math.random() < 0.35) {   // às vezes duas seguidas
-            const T2 = T + 0.25;
-            gotas.push({ x: x0, alt: a0, vx: (alvoX + 120 * -v.dir - x0) / T2, vy: (alvoA - a0) / T2 + 0.5 * 1400 * T2, t: 0 });
+          // duas e três seguidas (umas mais curtas, outras mais compridas: não dá para fugir a todas a andar)
+          const extra = Math.random() < 0.3 + n * 0.07 ? (n >= 3 && Math.random() < 0.4 ? 2 : 1) : 0;
+          for (let e = 1; e <= extra; e++) {
+            const T2 = T + 0.22 * e, dx = (e % 2 ? -1 : 1) * 130 * v.dir;
+            gotas.push({ x: x0, alt: a0, vx: (alvoX + dx - x0) / T2, vy: (alvoA - a0) / T2 + 0.5 * 1400 * T2, t: 0 });
           }
         }
       }
@@ -328,18 +433,22 @@
       if (Math.abs(g.x - p.x) < 80 && g.alt > p.alt && g.alt < p.alt + ALTO) {
         puff(g.x, g.alt, 7, '#2b2440');
         gotas.splice(i, 1);
-        sujaRobo(14 + nivel() * 2);
+        sujaRobo(18 + nivel() * 3);
         texto('SPLAT!', p.x, p.alt + 230, '#c77dff');
       }
     }
 
     // a gosma sai aos poucos (o robô tem limpa-vidros)
-    if (p.colado <= 0) p.gosma = Math.max(0, p.gosma - 5 * dt);
+    if (p.colado <= 0) p.gosma = Math.max(0, p.gosma - 4 * dt);
 
     // ---- câmara: o meio dos dois ----
     const W = vw(), meio = (p.x + v.x) / 2;
-    if (W >= ARENA) camX = (ARENA - W) / 2;
-    else camX += (Math.max(0, Math.min(ARENA - W, meio - W / 2)) - camX) * Math.min(1, dt * 5);
+    let alvoCam = meio - W / 2;
+    alvoCam = Math.max(p.x - W + 230, Math.min(p.x - 230, alvoCam));
+    alvoCam = Math.max(0, Math.min(hi() + 80 - W, alvoCam));
+    camX += (alvoCam - camX) * Math.min(1, dt * 5);
+    pessoasUpdate(dt, W);
+    for (const n of nuvens) { n.x += dt * 0.008; if (n.x > 1.2) n.x = -0.2; }
 
     for (let i = sparks.length - 1; i >= 0; i--) {
       const s = sparks[i];
@@ -558,45 +667,135 @@
     }
   }
 
+  // a cidade de dia: céu, prédios ao longe, quarteirões com lojas e ruas que vão para o
+  // fundo, passeio de trás, a nossa rua com passadeiras, e o passeio da frente
   function cidade(c, W, H, t) {
     const base = sy(0);
     const g = c.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#0b1338'); g.addColorStop(0.6, '#283c86'); g.addColorStop(1, '#45a0c9');
+    g.addColorStop(0, '#5ab8ff'); g.addColorStop(0.65, '#bfe6ff'); g.addColorStop(1, '#e6f6ff');
     c.fillStyle = g; c.fillRect(0, 0, W, H);
-    for (let k = 0; k < 45; k++) {
-      c.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(t * 1.2 + k));
-      c.fillStyle = '#fff'; c.fillRect((k * 173) % W, h01(k) * base * 0.5, 2.5, 2.5);
+    G.gfx.sun(c, W * 0.86, base * 0.16, 34, t);
+    for (const n of nuvens) G.gfx.cloud(c, n.x * W, n.y * base, n.s, 0.9);
+    // prédios ao longe (paralaxe)
+    const par = 0.35, larg = 170;
+    for (let k = -1; k < W / larg + 2; k++) {
+      const n = Math.round((camX * par + k * larg) / larg);
+      const x = k * larg - ((camX * par) % larg);
+      const h = 200 + h01(n * 1.3) * 230;
+      c.fillStyle = '#a9c7e0'; c.fillRect(x + 8, base - 60 - h, larg - 16, h);
+      c.fillStyle = 'rgba(255,255,255,.45)';
+      for (let jy = 0; jy < h / 40 - 1; jy++) for (let jx = 0; jx < 4; jx++) c.fillRect(x + 22 + jx * 34, base - 60 - h + 18 + jy * 40, 14, 18);
     }
-    c.globalAlpha = 1;
-    c.fillStyle = '#fff3bf'; c.beginPath(); c.arc(W * 0.82, base * 0.18, 34, 0, TAU); c.fill();
-    // prédios ao longe e ao perto
-    for (const [par, cor, alt0, larg] of [[0.25, '#1b2a5c', 160, 150], [0.55, '#14204a', 230, 190]]) {
-      for (let k = -1; k < W / larg + 2; k++) {
-        const n = Math.round((camX * par + k * larg) / larg);
-        const x = k * larg - ((camX * par) % larg);
-        const h = alt0 + h01(n * 1.3 + par) * 200;
-        c.fillStyle = cor; c.fillRect(x + 6, base - h, larg - 12, h);
-        c.fillStyle = 'rgba(255,214,102,.75)';
-        for (let jy = 0; jy < h / 34 - 1; jy++) for (let jx = 0; jx < (larg - 30) / 26; jx++) {
-          if (h01(n * 9.1 + jy * 3.3 + jx * 1.7 + par) < 0.55) continue;
-          c.fillRect(x + 18 + jx * 26, base - h + 16 + jy * 34, 12, 16);
+    // quarteirões ao pé (andam com o mundo, por isso as passadeiras batem certo com as ruas)
+    const passeio = base - 62;                  // onde começa o passeio de trás
+    const b0 = Math.floor((camX - BLOCO) / BLOCO), b1 = Math.floor((camX + W + BLOCO) / BLOCO);
+    for (let b = b0; b <= b1; b++) {
+      const x0 = b * BLOCO - camX, larguraBloco = BLOCO - VAO;
+      // dois ou três prédios por quarteirão
+      const nP = 2 + Math.floor(h01(b * 2.2) * 2);
+      for (let k = 0; k < nP; k++) {
+        const pw = larguraBloco / nP, px = x0 + k * pw;
+        const ph = 240 + h01(b * 5.1 + k * 1.7) * 220;
+        const cor = CORES[Math.floor(h01(b * 3.3 + k) * CORES.length)];
+        c.fillStyle = cor; c.fillRect(px, passeio - ph, pw - 4, ph);
+        c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(px, passeio - ph, pw - 4, 10);
+        c.fillStyle = '#e9f5ff';
+        for (let jy = 0; jy < (ph - 110) / 52; jy++) for (let jx = 0; jx < (pw - 30) / 46; jx++) {
+          c.fillRect(px + 16 + jx * 46, passeio - ph + 26 + jy * 52, 24, 30);
         }
+        // loja com toldo às riscas e porta
+        const toldo = ['#e63946', '#2a9d8f', '#f4a261', '#457b9d'][Math.floor(h01(b * 7 + k) * 4)];
+        for (let r = 0; r < (pw - 4) / 20; r++) {
+          c.fillStyle = r % 2 ? '#ffffff' : toldo;
+          c.fillRect(px + r * 20, passeio - 92, Math.min(20, pw - 4 - r * 20), 18);
+        }
+        c.fillStyle = '#bde0fe'; c.fillRect(px + 12, passeio - 70, pw * 0.45, 52);
+        c.fillStyle = '#6b4423'; c.fillRect(px + pw * 0.62, passeio - 72, 30, 72);
       }
+      // a rua que vai para o fundo, entre dois quarteirões
+      const rx = x0 + larguraBloco, topo = passeio - 140;
+      c.fillStyle = '#8d93a8';
+      c.beginPath(); c.moveTo(rx, passeio); c.lineTo(rx + VAO, passeio); c.lineTo(rx + VAO * 0.62, topo); c.lineTo(rx + VAO * 0.38, topo); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3; c.setLineDash([12, 10]);
+      c.beginPath(); c.moveTo(rx + VAO / 2, passeio); c.lineTo(rx + VAO / 2, topo); c.stroke(); c.setLineDash([]);
     }
-    // rua
-    c.fillStyle = '#3a3f58'; c.fillRect(0, base, W, H - base);
-    c.fillStyle = '#596080'; c.fillRect(0, base, W, 10);
-    c.strokeStyle = 'rgba(255,214,102,.8)'; c.lineWidth = 6; c.setLineDash([40, 34]);
-    c.beginPath(); c.moveTo(-((camX) % 74), base + 46); c.lineTo(W, base + 46); c.stroke();
+    // passeio de trás e lancil
+    c.fillStyle = '#d6d3cb'; c.fillRect(0, passeio, W, 44);
+    c.fillStyle = '#a8a59c'; c.fillRect(0, passeio + 40, W, 6);
+    // a nossa rua
+    c.fillStyle = '#5c6378'; c.fillRect(0, passeio + 46, W, 110);
+    c.strokeStyle = 'rgba(255,214,102,.9)'; c.lineWidth = 5; c.setLineDash([40, 34]);
+    c.beginPath(); c.moveTo(-(camX % 74), base + 40); c.lineTo(W, base + 40); c.stroke();
     c.setLineDash([]);
-    // os limites da arena: barreiras às riscas
-    for (const ax of [60, ARENA - 60]) {
-      const x = ax - camX;
+    // passeio da frente
+    c.fillStyle = '#d6d3cb'; c.fillRect(0, passeio + 156, W, H - passeio - 156);
+    c.fillStyle = '#a8a59c'; c.fillRect(0, passeio + 156, W, 6);
+    // passadeiras e semáforos de peões, uma em cada cruzamento
+    for (let b = b0; b <= b1; b++) {
+      const zx = zebraX(b) - camX;
+      if (zx < -150 || zx > W + 150) continue;
+      c.fillStyle = 'rgba(255,255,255,.92)';
+      for (let k = 0; k < 6; k++) c.fillRect(zx - 60, passeio + 52 + k * 17, 120, 9);
+      // semáforo no passeio de trás
+      c.fillStyle = '#3d405b'; c.fillRect(zx + 68, passeio - 120, 7, 150);
+      G.gfx.rr(c, zx + 58, passeio - 160, 27, 46, 6); c.fillStyle = '#22223b'; c.fill();
+      const vd = verde(b);
+      c.fillStyle = vd ? '#3a3a3a' : '#ff4d4d'; c.beginPath(); c.arc(zx + 71.5, passeio - 148, 7, 0, TAU); c.fill();
+      c.fillStyle = vd ? '#4ade80' : '#3a3a3a'; c.beginPath(); c.arc(zx + 71.5, passeio - 127, 7, 0, TAU); c.fill();
+    }
+    // o fim da rua desta ronda: barreira da polícia (o Venom não passa daqui)
+    const bx = hi() - 60 - camX;
+    if (bx > -60 && bx < W + 60) {
+      for (let k = 0; k < 5; k++) { c.fillStyle = k % 2 ? '#ffffff' : '#e63946'; c.fillRect(bx - 70 + k * 28, base - 70, 28, 22); }
+      c.fillStyle = '#3d405b'; c.fillRect(bx - 66, base - 48, 8, 48); c.fillRect(bx + 58, base - 48, 8, 48);
+    }
+  }
+
+  // uma pessoa (base nos pés), virada para onde anda
+  function pessoaArt(c, q, t) {
+    const k = q.alt * (0.62 + 0.3 * q.z);
+    const corre = q.medo > 0 ? 2.2 : 1;
+    const passo = q.estado === 'atravessa' ? Math.sin(q.t * 7) * 6 : Math.sin(q.t * 8 * corre) * 9;
+    const salto = q.festa > 0 ? Math.abs(Math.sin(q.t * 9)) * 16 : 0;
+    c.save(); c.scale(k, k); c.translate(0, -salto);
+    if (q.vx < 0 && q.estado !== 'atravessa') c.scale(-1, 1);
+    c.lineCap = 'round';
+    c.strokeStyle = q.calca; c.lineWidth = 9;
+    c.beginPath(); c.moveTo(-4, -34); c.lineTo(-4 + passo, -2); c.stroke();
+    c.beginPath(); c.moveTo(5, -34); c.lineTo(5 - passo, -2); c.stroke();
+    G.gfx.rr(c, -13, -66, 27, 36, 9); c.fillStyle = q.cor; c.fill();
+    // braços: no ar quando fogem ou festejam
+    c.strokeStyle = q.pele; c.lineWidth = 6;
+    const ar = q.medo > 0 || q.festa > 0;
+    c.beginPath(); c.moveTo(-11, -60); c.lineTo(ar ? -20 : -14 - passo * 0.4, ar ? -88 : -38); c.stroke();
+    c.beginPath(); c.moveTo(12, -60); c.lineTo(ar ? 21 : 15 + passo * 0.4, ar ? -88 : -38); c.stroke();
+    c.fillStyle = q.pele; c.beginPath(); c.arc(0, -80, 13, 0, TAU); c.fill();
+    c.fillStyle = q.cabelo; c.beginPath(); c.arc(0, -84, 13.5, Math.PI * 1.05, Math.PI * 1.95); c.fill();
+    c.fillStyle = '#22223b';
+    c.beginPath(); c.arc(5, -81, 1.8, 0, TAU); c.fill();
+    if (q.medo > 0) { c.beginPath(); c.arc(6, -73, 3, 0, TAU); c.fill(); }   // boca de "oh!"
+    else { c.strokeStyle = '#22223b'; c.lineWidth = 1.5; c.beginPath(); c.arc(4, -76, 4, 0.2, 2.2); c.stroke(); }
+    c.restore();
+  }
+
+  function desenhaPessoas(c, W, frente, t) {
+    const passeio = sy(0) - 62;
+    for (const q of pessoas) {
+      if ((q.z >= 0.5) !== frente) continue;
+      const x = q.x - camX;
       if (x < -60 || x > W + 60) continue;
-      for (let k = 0; k < 4; k++) {
-        c.fillStyle = k % 2 ? '#ffd60a' : '#22223b';
-        c.fillRect(x - 18, base - 120 + k * 30, 36, 30);
-      }
+      const y = passeio + 30 + q.z * 160;
+      c.save(); c.translate(x, y); pessoaArt(c, q, t); c.restore();
+    }
+  }
+
+  function baloesPessoas(c, W) {
+    const passeio = sy(0) - 62;
+    for (const q of pessoas) {
+      if (q.diz <= 0) continue;
+      const x = q.x - camX;
+      if (x < 40 || x > W - 40) continue;
+      G.gfx.bubble(c, Math.max(96, Math.min(W - 96, x)), passeio + 30 + q.z * 160 - 70 * q.alt * (0.62 + 0.3 * q.z) - 10, q.txt);
     }
   }
 
@@ -613,6 +812,7 @@
     c.save(); c.scale(vs, vs);
     cidade(c, W, H, t);
     const base = sy(0);
+    desenhaPessoas(c, W, false, t);
 
     // sombras
     for (const r of [p, v]) {
@@ -648,6 +848,9 @@
         c.beginPath(); c.moveTo(x + lx - 12, y); c.lineTo(x + lx + 12, y); c.lineTo(x + lx, y + 30 + Math.random() * 16); c.closePath(); c.fill();
       }
     }
+
+    desenhaPessoas(c, W, true, t);
+    baloesPessoas(c, W);
 
     if (fase === 'embrulhado') {
       G.gfx.bubble(c, Math.max(110, Math.min(W - 110, v.x - camX)), sy(v.alt) - 280, 'Grrr! Estou preso! 😠');
@@ -689,6 +892,16 @@
     }
     c.restore();
 
+    // o Venom está fora do ecrã: uma seta com a cara dele a mostrar para onde ir
+    const vx = (v.x - camX) * vs;
+    if (fase === 'luta' && (vx > G.W + 20 || vx < -20)) {
+      const dir = vx > G.W ? 1 : -1, ax = dir > 0 ? G.W - 60 : 60, ay = G.H * 0.42 + Math.sin(t * 6) * 8;
+      c.save(); c.translate(ax, ay);
+      c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(0, 0, 34, 0, TAU); c.fill();
+      caraVenom(c, 22, t, 0);
+      c.restore();
+      G.gfx.label(c, dir > 0 ? '▶' : '◀', ax + dir * 52, ay, 40, '#e63946', 'center', '#ffffff');
+    }
     hud(c, t);
   };
 
@@ -737,6 +950,7 @@
       fase: fase, ronda: ronda, px: Math.round(p.x), vx: Math.round(v.x), palt: Math.round(p.alt), valt: Math.round(v.alt),
       teias: Math.round(v.teias), gosma: Math.round(p.gosma), colado: +p.colado.toFixed(1), carga: +carga.toFixed(2),
       tiros: tiros.length, gotas: gotas.length, bloq: v.bloq > 0, stars: G.state.stars,
+      pessoas: pessoas.length, aAtravessar: pessoas.filter(function (q) { return q.estado === 'atravessa'; }).length,
       gotaPerto: gotas.reduce(function (mn, g) { const d = Math.abs(g.x - p.x); return d < mn ? d : mn; }, 9999)
     };
   };
