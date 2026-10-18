@@ -132,6 +132,27 @@ body.scene-ash.ash-campo-espera #btnDoor { opacity: 0.4; }
 }
 /* lá dentro das casas e do hospital só se toca no ecrã: os botões escondem-se */
 body.scene-ash.ash-dentro .ctl { display: none !important; }
+/* ROBÔS: ◀ ▶ ⬆, teias 🕸️ (btnFire), soco 👊 (btnHorn, por cima do ◀) e a rede gigante 💥
+   (btnDoor), que só aparece quando está carregada */
+body.scene-robos #btnLeft,
+body.scene-robos #btnRight,
+body.scene-robos #btnJump,
+body.scene-robos #btnFire { display: block; }
+body.scene-robos #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(230, 57, 70, 0.5);
+}
+body.scene-robos.robos-super #btnDoor {
+  display: block;
+  right: calc(122px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  background: rgba(255, 214, 10, 0.7);
+  animation: portaPisca 0.9s ease-in-out infinite;
+}
+@media (max-width: 560px) {
+  body.scene-robos.robos-super #btnDoor { bottom: calc(126px + env(safe-area-inset-bottom)); }
+}
 /* MARVEL: ◀ ▶ ⬆ ⚡ e o 🦸 (troca de herói) por cima do ◀ */
 body.scene-marvel #btnLeft,
 body.scene-marvel #btnRight,
@@ -457,6 +478,8 @@ body.splash-on #splash { display: flex; }
   background: linear-gradient(#ffd23f 0 25%, #3bb273 25% 50%, #1e6fd9 50% 75%, #e3242b 75%);
   animation-delay: 4.55s;
 }
+/* Robôs: vermelho do Spidey a passar para o preto do Venom */
+#btnPlayRobos { background: linear-gradient(135deg, #e63946 0 48%, #14121f 52%); animation-delay: 5.45s; }
 /* Pikachu: amarelo com as bochechas vermelhas */
 #btnPlayAsh { background: radial-gradient(circle at 20% 42%, #ff4d4d 0 8%, transparent 9%), radial-gradient(circle at 80% 42%, #ff4d4d 0 8%, transparent 9%), linear-gradient(#ffe45c, #f4b400); animation-delay: 5.15s; }
 /* Pokémon: azul do logótipo, com uma pokébola desenhada em CSS no lugar do emoji */

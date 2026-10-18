@@ -13,6 +13,7 @@ const JOGO = [
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
   'js/ash.js',
   'js/audio.js',
+  'js/robos.js',
   'js/barbie.js',
   'js/carros.js',
   'js/castle.js',
