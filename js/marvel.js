@@ -121,6 +121,41 @@
         }
       }
     },
+    // a Pantera Negra (pedido do Isaac, 2026-11-07): capacete preto com orelhas de gato,
+    // olhos prateados, o colar de garras e as garras na mão
+    pantera: {
+      cabeca: function (c) {
+        c.fillStyle = '#16161d';
+        for (const k of [-1, 1]) {                      // orelhinhas de gato
+          c.beginPath(); c.moveTo(k * 7.6, -66); c.lineTo(k * 6.2, -73.5); c.lineTo(k * 2.4, -67.5); c.closePath(); c.fill();
+        }
+        c.strokeStyle = '#8d8da6'; c.lineWidth = 0.6;   // os riscos de vibranium
+        c.beginPath(); c.moveTo(1, -68); c.lineTo(1, -63.5); c.stroke();
+        c.beginPath(); c.moveTo(-6.5, -55); c.quadraticCurveTo(1, -51.5, 8.5, -55); c.stroke();
+        for (const ex of [-2.6, 4.4]) {
+          c.save(); c.translate(ex, -61); c.rotate(ex < 0 ? 0.35 : -0.35);
+          c.fillStyle = '#e9ecef';
+          c.beginPath(); c.ellipse(0, 0, 2.8, 1.3, 0, 0, TAU); c.fill();
+          c.restore();
+        }
+      },
+      peito: function (c) {
+        c.fillStyle = '#c0c0d4';                        // o colar de garras
+        for (let i = 0; i < 7; i++) {
+          const a = Math.PI * (0.18 + i * 0.107), px = Math.cos(a) * 8, py = -50 + Math.sin(a) * 5;
+          c.beginPath(); c.moveTo(px - 1.1, py); c.lineTo(px + 1.1, py); c.lineTo(px, py + 3.2); c.closePath(); c.fill();
+        }
+        c.strokeStyle = 'rgba(157,78,221,.75)'; c.lineWidth = 0.7;
+        c.beginPath(); c.moveTo(-6, -42); c.lineTo(0, -35); c.lineTo(6, -42); c.stroke();
+        c.beginPath(); c.moveTo(-4, -32); c.lineTo(0, -29); c.lineTo(4, -32); c.stroke();
+      },
+      mao: function (c) {
+        c.strokeStyle = '#e9ecef'; c.lineWidth = 1.2; c.lineCap = 'round';
+        for (const k of [-2.6, 0, 2.6]) {
+          c.beginPath(); c.moveTo(k, 21.5); c.lineTo(k * 1.3, 26.5); c.stroke();
+        }
+      }
+    },
     capitao: {
       cabeca: function (c) {
         c.fillStyle = '#1d4e89';
@@ -488,7 +523,10 @@
     { id: 'thor', nome: 'Thor', poder: 'trovao', vel: 330, salto: 800, cd: 0.6, capa: '#c1121f',
       tronco: '#3d405b', bracos: '#3d405b', pernas: '#2b2d42', ancas: '#2b2d42' },
     { id: 'hulk', nome: 'Hulk', poder: 'smash', vel: 320, salto: 960, cd: 0.8, grande: 1.35, expr: 'bravo',
-      pele: '#5fb041', tronco: '#5fb041', bracos: '#5fb041', maos: '#5fb041', pernas: '#6a3d9a', ancas: '#6a3d9a', pes: '#5fb041' }
+      pele: '#5fb041', tronco: '#5fb041', bracos: '#5fb041', maos: '#5fb041', pernas: '#6a3d9a', ancas: '#6a3d9a', pes: '#5fb041' },
+    // a Pantera Negra dá um salto rápido em frente com as garras (energia roxa)
+    { id: 'pantera', nome: 'Pantera Negra', poder: 'garras', vel: 385, salto: 920, cd: 0.5, semRosto: true,
+      pele: '#16161d', tronco: '#1c1c26', bracos: '#1c1c26', maos: '#1c1c26', pernas: '#1c1c26', ancas: '#2b2b3a', pes: '#2b2b3a' }
   ];
   const VILOES = [
     { id: 'loki', nome: 'Loki', tiro: 'magia', cor: '#52b788', expr: 'mau', capa: '#2e7d32',
@@ -586,6 +624,7 @@
   let casas, ladroes, civis, avisoLadrao;
   let corrida, portaVisivel;
   let equipa, chamada, campo, campoCd, campoEspera;
+  let arranhoes;                       // as marcas roxas das garras da Pantera Negra
 
   /* as medalhas ficam guardadas: ganhar com os cinco heróis é para sempre */
   function carregaMedalhas() {
@@ -657,7 +696,7 @@
     portaVisivel = false;
     equipa = null; chamada = null; campo = null; campoCd = 0; campoEspera = false;
     document.body.classList.remove('marvel-campo-espera');
-    tiros = []; tirosMaus = []; carros = []; fx = []; raios = []; ondas = []; banners = [];
+    tiros = []; tirosMaus = []; carros = []; fx = []; raios = []; ondas = []; banners = []; arranhoes = [];
     transito = []; baloes = []; comidas = []; coracoes = [];
     ladroes = []; civis = []; avisoLadrao = 0;
     vidas = MAX_VIDAS; descanso = null;
@@ -696,6 +735,7 @@
       for (const a of equipa) if (a.k === novo) { a.k = hi; a.x = heroi.x; a.y = heroi.y; a.cd = rnd(1, 2); }
     }
     hi = novo;
+    heroi.balanco = null; heroi.impulso = 0;
     heroi.trocaT = 0.45;
     faisca(heroi.x, heroi.y - 50, '#ffd166', 16, 260);
     sfx('monta');
@@ -734,10 +774,17 @@
     const h = heroi, d = defHeroi();
     if (h.cd > 0 || h.desmonta) return;
     if (h.conduz) { disparaCarro(); return; }
+    if (h.balanco) return;
     const mx = h.x + h.dir * 26 * (d.grande || 1), my = h.y - altura(d) * 0.58;
     h.braco = 1;
     if (d.poder === 'raio' || d.poder === 'teia') {
       const alvo = alvoMaisPerto(mx, my, h.dir, 820);
+      // o Homem-Aranha sem vilões à frente: se houver uma casa perto, a teia vai
+      // ao telhado e ele pendura-se, puxa o fio e salta lá para cima
+      if (d.poder === 'teia' && !alvo) {
+        const ca = casaParaTeia();
+        if (ca) { comecaBalanco(ca); return; }
+      }
       let vx = h.dir, vy = 0;
       if (alvo) {                      // mira assistida: aponta ao vilão mais perto
         const ax = alvo.x - mx, ay = centroY(alvo) - my, n = Math.hypot(ax, ay) || 1;
@@ -772,6 +819,81 @@
       if (!h.noChao) { h.vy = 1500; h.pisao = true; h.cd = 0.2; return; }
       smash();
       h.cd = d.cd;
+    } else if (d.poder === 'garras') {
+      // um pulo rápido em frente: as garras apanham quem estiver no caminho
+      h.vx = h.dir * 1100; h.impulso = 0.2; h.garraT = 0.3;
+      sfx('whoosh');
+      arranhoes.push({ x: h.x + h.dir * 70, y: my, dir: h.dir, t: 0 });
+      for (const v of inimigos()) {
+        if (!atacavel(v)) continue;
+        const dx = (v.x - h.x) * h.dir, larg = v.veiculo ? 300 : 250;
+        if (dx > -30 && dx < larg && Math.abs(centroY(v) - my) < 120 * (v.def.grande || 1)) {
+          acerta(v, h.dir);
+          arranhoes.push({ x: v.x, y: centroY(v), dir: h.dir, t: 0 });
+        }
+      }
+      h.cd = d.cd;
+    }
+  }
+
+  /* ---------- a teia-fio do Homem-Aranha até ao telhado das casas ---------- */
+  const TELHADO_Y = -CASA_ANDAR * 2;
+  function casaParaTeia() {
+    const h = heroi;
+    if (h.conduz || h.y < TELHADO_Y + 20) return null;     // já está lá em cima
+    let melhor = null, md = 1e9;
+    for (const ca of casas) {
+      const dx = ca.x - h.x;
+      if (Math.abs(dx) > 700 || dx * h.dir < -60) continue;  // só as que estão à frente
+      if (Math.abs(dx) < md) { md = Math.abs(dx); melhor = ca; }
+    }
+    return melhor;
+  }
+  function comecaBalanco(ca) {
+    const h = heroi;
+    const lado = Math.abs(ca.x - h.x) < 140 ? 0 : (ca.x > h.x ? -1 : 1);
+    h.balanco = { casa: ca, ax: ca.x + lado * 150, ay: TELHADO_Y + 6, fase: 'lanca', t: 0 };
+    h.impulso = 0; h.carroApoio = null;
+    h.cd = 0.5;
+    sfx('teia');
+  }
+  function balanca(dt) {
+    const h = heroi, b = h.balanco;
+    b.t += dt;
+    if (b.fase === 'lanca') {                    // o fio vai a voar até ao telhado
+      h.vx *= Math.max(0, 1 - dt * 10);
+      if (!h.noChao) { h.vy += GRAV * dt; h.y = Math.min(0, h.y + h.vy * dt); if (h.y >= 0) { h.vy = 0; h.noChao = true; } }
+      h.x += h.vx * dt;
+      if (b.t >= 0.16) {
+        b.fase = 'pendura'; b.t = 0;
+        b.L0 = Math.hypot(h.x - b.ax, h.y - b.ay);
+        b.th0 = Math.atan2(h.x - b.ax, h.y - b.ay);
+        b.thF = b.ax === b.casa.x ? b.th0 * 0.3 : Math.sign(b.casa.x - b.ax) * 0.4;
+        faisca(b.ax, b.ay, '#fff', 6, 120);
+        sfx('hop');
+      }
+      return;
+    }
+    if (b.fase === 'pendura') {                  // pendurado, a puxar o fio e a balançar
+      const k = Math.min(1, b.t / 0.9);
+      const kL = 1 - (1 - k) * (1 - k);
+      const kT = k * k * (3 - 2 * k);
+      const L = b.L0 + (150 - b.L0) * kL;
+      const th = b.th0 + (b.thF - b.th0) * kT;
+      const nx = b.ax + Math.sin(th) * L, ny = Math.min(-4, b.ay + Math.cos(th) * L);
+      if (Math.abs(nx - h.x) > 1) h.dir = nx > h.x ? 1 : -1;
+      h.x = nx; h.y = ny; h.vx = 0; h.vy = 0; h.noChao = false;
+      if (k >= 1) {                              // larga o fio e salta para o telhado
+        const tx = b.casa.x, apice = TELHADO_Y - 110;
+        const vy0 = -Math.sqrt(2 * GRAV * Math.max(40, h.y - apice));
+        const tempoVoo = -vy0 / GRAV + Math.sqrt(2 * (TELHADO_Y - apice) / GRAV);
+        h.vy = vy0; h.vx = (tx - h.x) / tempoVoo;
+        h.dir = h.vx >= 0 ? 1 : -1;
+        h.impulso = tempoVoo; h.saltos = 1;
+        h.balanco = null;
+        sfx('whee');
+        faisca(h.x, h.y - 40, '#fff', 8, 200);
+      }
     }
   }
 
@@ -924,7 +1046,7 @@
     largaVilao();
     descanso = { t: 0 };
     h.desmonta = null; h.vx = 0; h.vy = 0; h.x = TORRE_X + 40; h.y = 0; h.noChao = true;
-    h.carroApoio = null; h.invul = 3.6;
+    h.carroApoio = null; h.invul = 3.6; h.balanco = null; h.impulso = 0;
     if (equipa) equipa.forEach(function (a, j) { a.x = h.x - 80 - j * 60; a.y = 0; });
     sfx('poof');
     faisca(h.x, h.y - 40, '#bde0fe', 20, 280);
@@ -1087,7 +1209,7 @@
   function equipaAtaca(a) {
     const d = HEROIS[a.k];
     const my = a.y - altura(d) * 0.58;
-    const alvo = alvoMaisPerto(a.x, my, a.dir, d.poder === 'smash' ? 300 : 560, true);
+    const alvo = alvoMaisPerto(a.x, my, a.dir, d.poder === 'smash' || d.poder === 'garras' ? 300 : 560, true);
     if (!alvo) return false;
     if (Math.abs(alvo.x - (cam.x + vistaW() / 2)) > vistaW() / 2) return false;   // só no ecrã
     a.dir = alvo.x >= a.x ? 1 : -1;
@@ -1102,6 +1224,10 @@
       raios.push({ x1: mx, y1: my - 30, x2: alvo.x, y2: centroY(alvo), t: 0, seg: raioZig(mx, my - 30, alvo.x, centroY(alvo)) });
       acerta(alvo, a.dir);
       sfx('trovao');
+    } else if (d.poder === 'garras') {
+      sfx('whoosh');
+      acerta(alvo, a.dir);
+      arranhoes.push({ x: alvo.x, y: centroY(alvo), dir: a.dir, t: 0 });
     } else {                           // o Hulk dá um pisão no chão
       ondas.push({ x: a.x, y: a.y, t: 0 });
       sfx('smash'); G.shake = Math.max(G.shake, 0.2);
@@ -1572,7 +1698,7 @@
       partes[n] = { dx: 0, dy: 0, r: 0, vx: rnd(-90, 90), vy: rnd(-160, -60) - (n === 'cabeca' ? 60 : 0), vr: rnd(-7, 7) };
     }
     h.desmonta = { t: 0, partes: partes };
-    h.vx = 0; h.carroApoio = null;
+    h.vx = 0; h.carroApoio = null; h.balanco = null; h.impulso = 0;
     sfx('desmonta');
     const perde = Math.min(contaPinos, 6);
     contaPinos -= perde;
@@ -1608,8 +1734,12 @@
     if (I.isHeld('left')) mv -= 1;
     if (I.isHeld('right')) mv += 1;
     const vel = d.vel * (h.carrega ? 0.88 : 1);
-    h.vx += (mv * vel - h.vx) * Math.min(1, dt * (h.noChao ? 14 : 7));
-    if (mv) h.dir = mv;
+    // a meio de um salto da teia ou das garras não se trava: vai até ao fim
+    if (h.impulso > 0) h.impulso -= dt;
+    else {
+      h.vx += (mv * vel - h.vx) * Math.min(1, dt * (h.noChao ? 14 : 7));
+      if (mv) h.dir = mv;
+    }
     if (I.justPressed('up') || I.justPressed('jump')) {
       if (h.noChao) { h.vy = -d.salto; h.noChao = false; h.saltos = 1; h.carroApoio = null; sfx('hop'); }
       else if (h.saltos < 2) { h.vy = -d.salto * 0.85; h.saltos = 2; sfx('hop'); faisca(h.x, h.y, '#fff', 5, 140); }
@@ -1663,6 +1793,7 @@
     h.invul = Math.max(0, h.invul - dt);
     h.braco = Math.max(0, h.braco - dt * 4);
     h.trocaT = Math.max(0, h.trocaT - dt);
+    h.garraT = Math.max(0, (h.garraT || 0) - dt);
     if (h.desmonta) {
       const dm = h.desmonta;
       dm.t += dt;
@@ -1692,6 +1823,7 @@
       else if (pertoDoCarro()) entraNoCarro();
     }
     if (h.conduz) conduz(dt);
+    else if (h.balanco) balanca(dt);
     else andaAPe(dt);
 
     // encostar num vilão algemado = pegar nele e levá-lo ao colo
@@ -2030,6 +2162,7 @@
     }
     for (let i = raios.length - 1; i >= 0; i--) { raios[i].t += dt; if (raios[i].t > 0.28) raios.splice(i, 1); }
     for (let i = ondas.length - 1; i >= 0; i--) { ondas[i].t += dt; if (ondas[i].t > 0.5) ondas.splice(i, 1); }
+    for (let i = arranhoes.length - 1; i >= 0; i--) { arranhoes[i].t += dt; if (arranhoes[i].t > 0.4) arranhoes.splice(i, 1); }
 
     if (vitoria) {
       vitoria.t += dt;
@@ -2803,9 +2936,30 @@
     }
   }
 
+  // o fio de teia, da mão do Homem-Aranha até ao telhado
+  function desenhaFio(c) {
+    const h = heroi, b = h.balanco;
+    const mx = h.x + h.dir * 8, my = h.y - altura(defHeroi()) * (b.fase === 'pendura' ? 1.02 : 0.62);
+    const k = b.fase === 'lanca' ? Math.min(1, b.t / 0.16) : 1;
+    const ex = mx + (b.ax - mx) * k, ey = my + (b.ay - my) * k;
+    c.lineCap = 'round';
+    c.strokeStyle = 'rgba(34,34,59,.45)'; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(mx, my); c.lineTo(ex, ey); c.stroke();
+    c.strokeStyle = '#fff'; c.lineWidth = 2.6; c.stroke();
+    if (k >= 1) {                      // a teia colada no telhado
+      c.strokeStyle = '#fff'; c.lineWidth = 2;
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI;
+        c.beginPath(); c.moveTo(ex + Math.cos(a) * 11, ey + Math.sin(a) * 11); c.lineTo(ex - Math.cos(a) * 11, ey - Math.sin(a) * 11); c.stroke();
+      }
+      c.beginPath(); c.arc(ex, ey, 6, 0, TAU); c.stroke();
+    }
+  }
+
   function desenhaHeroi(c, t) {
     const h = heroi, d = defHeroi();
     if (h.conduz) return;              // vai dentro do carro de corrida (desenhado lá)
+    if (h.balanco) desenhaFio(c);
     c.save(); c.translate(h.x, h.y); c.scale(FIG, FIG);
     if (h.invul > 0 && !h.desmonta && Math.floor(t * 14) % 2) c.globalAlpha = 0.45;
     if (h.trocaT > 0) {
@@ -2813,10 +2967,16 @@
       c.fillStyle = 'rgba(255,209,102,' + (k * 0.6) + ')';
       c.beginPath(); c.arc(0, -40, 50 * (1.4 - k), 0, TAU); c.fill();
     }
+    if (h.garraT > 0) {                // o rasto roxo de energia da Pantera Negra
+      c.fillStyle = 'rgba(157,78,221,' + (h.garraT / 0.3 * 0.45) + ')';
+      for (let k = 1; k <= 3; k++) {
+        c.beginPath(); c.ellipse(-h.dir * k * 16, -36, 13, 30, 0, 0, TAU); c.fill();
+      }
+    }
     const escudoFora = tiros.some(function (x) { return x.tipo === 'escudo'; });
     boneco(c, d, {
       t: t, dir: h.dir, fase: h.fase, anda: h.noChao && Math.abs(h.vx) > 30, braco: h.braco,
-      noAr: !h.noChao, cima: !!h.carrega, partes: h.desmonta ? h.desmonta.partes : null,
+      noAr: !h.noChao, cima: !!h.carrega || (h.balanco && h.balanco.fase === 'pendura'), partes: h.desmonta ? h.desmonta.partes : null,
       jato: h.jato, semEscudo: escudoFora,
       aceno: chamada ? Math.min(1, chamada.t / CHAMA_BRACO) : 0
     });
@@ -3092,6 +3252,18 @@
       c.beginPath(); r.seg.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke();
       c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
     }
+    for (const a of arranhoes) {          // três riscos roxos das garras da Pantera
+      const k = a.t / 0.4;
+      c.save(); c.translate(a.x, a.y); c.scale(a.dir, 1);
+      c.globalAlpha = 1 - k; c.lineCap = 'round';
+      for (let i = -1; i <= 1; i++) {
+        c.strokeStyle = '#9d4edd'; c.lineWidth = 9;
+        c.beginPath(); c.moveTo(-34 + i * 6, -30 + i * 16); c.quadraticCurveTo(0, -8 + i * 16, 34 + i * 6, 14 + i * 16); c.stroke();
+        c.strokeStyle = '#f3e8ff'; c.lineWidth = 3; c.stroke();
+      }
+      c.restore();
+    }
+    c.globalAlpha = 1;
     for (const o of ondas) {
       c.strokeStyle = 'rgba(201,173,167,' + (1 - o.t / 0.5) + ')'; c.lineWidth = 10;
       c.beginPath(); c.ellipse(o.x, o.y, 40 + o.t * 560, 16 + o.t * 40, 0, Math.PI, TAU); c.stroke();
@@ -3112,6 +3284,7 @@
   S.debug = function () {
     return {
       heroi: defHeroi().id, x: Math.round(heroi.x), y: Math.round(heroi.y), chao: heroi.noChao,
+      balanco: heroi.balanco ? heroi.balanco.fase : null,
       desmonta: !!heroi.desmonta, carrega: heroi.carrega ? heroi.carrega.def.id : null,
       viloes: viloes.map(function (v) { return v.def.id + ':' + v.estado + ':' + v.energia + '@' + Math.round(v.x) + ',' + Math.round(v.y); }),
       presos: presos.length, carros: carros.map(function (k) { return k.estado + '@' + Math.round(k.x) + (k.preso ? '+' + k.preso.def.id : ''); }), tiros: tiros.length, tirosMaus: tirosMaus.length,
