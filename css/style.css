@@ -153,6 +153,33 @@ body.scene-robos.robos-super #btnDoor {
 @media (max-width: 560px) {
   body.scene-robos.robos-super #btnDoor { bottom: calc(126px + env(safe-area-inset-bottom)); }
 }
+/* STAR WARS: ◀ ▶ ⬆, as pistolas do amigo 🔫 (btnFire), a Força do bebé ✋ (btnHorn, por
+   cima do ◀, apagadinha enquanto recarrega) e o 🚪 só quando estamos dentro do boi de Lego */
+body.scene-starwars #btnLeft,
+body.scene-starwars #btnRight,
+body.scene-starwars #btnJump,
+body.scene-starwars #btnFire { display: block; }
+body.scene-starwars #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(158, 240, 26, 0.5);
+}
+body.scene-starwars.sw-forca-espera #btnHorn { opacity: 0.4; }
+body.scene-starwars.sw-dentro #btnDoor {
+  display: block;
+  right: calc(122px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  width: 92px;
+  height: 92px;
+  font-size: 44px;
+  animation: portaPisca 1.1s ease-in-out infinite;
+}
+@media (max-width: 560px) {
+  body.scene-starwars.sw-dentro #btnDoor {
+    right: calc(18px + env(safe-area-inset-right));
+    bottom: calc(232px + env(safe-area-inset-bottom));
+  }
+}
 /* MARVEL: ◀ ▶ ⬆ ⚡ e o 🦸 (troca de herói) por cima do ◀ */
 body.scene-marvel #btnLeft,
 body.scene-marvel #btnRight,
