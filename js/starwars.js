@@ -38,7 +38,17 @@
    - O bebé sobe para CIMA dos bois de Lego (as costas e a cabeça são chão) e vai à
      boleia quando o boi anda.
    - 🚪 ao pé da nave = o bebé volta a entrar e a nave levanta voo. No espaço não se
-     sai (não há chão). */
+     sai (não há chão).
+
+   3.ª ronda (pedido do Isaac): "também posso sair com o que conduz a nave; uma foto do
+   que conduz e do bebé para ele sair e andarmos; o que conduz tem uma pistola
+   comprida com tiros, e uma corda com tiros, e dispara raios laser."
+   - Com o 🚪 saem OS DOIS: o bebé e o amigo. No canto aparecem as duas FOTOS (e o 🔄):
+     toca-se numa para escolher quem se conduz; o outro vem atrás sozinho.
+   - O amigo a pé: 🔫 = espingarda comprida (raios laser compridos), 🪢 = a CORDA com
+     tiros, que vai buscar o mau mais perto e o deixa amigo. Quando vem atrás, também
+     dispara sozinho.
+   - A nave fica vazia e vem atrás deles em piloto automático. */
 (function () {
   window.G = window.G || {};
   const TAU = Math.PI * 2;
@@ -61,7 +71,7 @@
 
   let s, camX, vel, terra, ronda, ents, tiros, tirosM, parts, textos, pickups, fase, faseT, destino;
   let prox, proxPick, boi, boss, tempo, forcaFx, hudTerras, dentroVisivel, forcaVisivel;
-  let pe, fogoAPe;   // o bebé cá fora a pé (null = está na nave)
+  let pe, fora, fogoAPe, cordas, hudBonecos;   // fora = [bebé, amigo] cá fora; pe = quem conduzimos
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function h01(n) { const v = Math.sin(n * 127.1 + 3.3) * 43758.5; return v - Math.floor(v); }
@@ -81,7 +91,7 @@
 
   S.enter = function () {
     s = { sx: 200, y: 220, vy: 0, wx: 200, inv: 2, flash: 0, tilt: 0, cdTiro: 0, cdAmigo: 1.5, tiroT: 0,
-      coracoes: MAXC, forcaCd: 0, forcaT: 0 };
+      coracoes: MAXC, forcaCd: 0, forcaT: 0, cordaCd: 0 };
     ronda = 1; tempo = 0; forcaFx = 0; hudTerras = [];
     dentroVisivel = null; forcaVisivel = null; fogoAPe = null;
     comecaTerra(0);
@@ -91,7 +101,7 @@
     terra = i;
     camX = 0; vel = 200;
     ents = []; tiros = []; tirosM = []; parts = []; textos = []; pickups = [];
-    boss = null; boi = null; pe = null; botaoFogo(false);
+    boss = null; boi = null; pe = null; fora = null; cordas = []; hudBonecos = []; botaoFogo('nave');
     prox = vw() + 260; proxPick = 520;
     s.sx = vw() * 0.24; s.y = vh() * 0.38; s.vy = 0; s.inv = 1.6;
     fase = 'voa'; faseT = 0;
@@ -113,59 +123,103 @@
     document.body.classList.toggle('sw-forca-espera', !pronta);
   }
 
-  // a pé, o botão de disparar é a bolinha da Força do bebé (✨); na nave são as pistolas (🔫)
-  function botaoFogo(aPe) {
-    if (aPe === fogoAPe) return;
-    fogoAPe = aPe;
-    document.getElementById('btnFire').textContent = aPe ? '✨' : '🔫';
+  // os botões mudam com quem conduzimos: na nave 🔫 + ✋, o bebé ✨ + ✋, o amigo 🔫 + 🪢
+  function botaoFogo(modo) {
+    if (modo === fogoAPe) return;
+    fogoAPe = modo;
+    document.getElementById('btnFire').textContent = modo === 'bebe' ? '✨' : '🔫';
+    document.getElementById('btnHorn').textContent = modo === 'amigo' ? '🪢' : '✋';
+    document.getElementById('btnChama').textContent = '🔄';
+    document.body.classList.toggle('sw-pe', modo !== 'nave');
   }
-  // onde estamos agora (a nave, o boi ou o bebé a pé) e o tamanho para os toques
+  // onde estamos agora (a nave, o boi ou quem anda a pé) e o tamanho para os toques
   function eu() {
     if (boi) return { x: boi.x, y: boi.y - 120, mx: 120, my: 90 };
-    if (pe) return { x: pe.x, y: pe.y - 32, mx: 16, my: 26 };
+    if (pe) return pe.quem === 'amigo' ? { x: pe.x, y: pe.y - 50, mx: 16, my: 44 } : { x: pe.x, y: pe.y - 32, mx: 16, my: 26 };
     return { x: s.wx, y: s.y, mx: 52, my: 20 };
   }
   function pertoDaNave() { return !!pe && Math.abs(pe.x - s.wx) < 190 && pe.y > s.y - 160; }
-  // as partes de cima de um boi de Lego onde o bebé se pode pôr de pé
+  function outroBoneco() { return fora ? (fora[0] === pe ? fora[1] : fora[0]) : null; }
+  function recargaPoder() { return pe && pe.quem === 'amigo' ? s.cordaCd : s.forcaCd; }
+  // as partes de cima de um boi de Lego onde se pode estar de pé
   function topoBoi(e) {
     return [{ x0: e.x - 150, x1: e.x + 130, y: e.y - 236 }, { x0: e.x + 130, x1: e.x + 152, y: e.y - 192 }, { x0: e.x + 150, x1: e.x + 260, y: e.y - 276 }];
   }
 
-  /* ---------- sair da nave e voltar a entrar ---------- */
+  /* ---------- sair da nave (saem os dois) e voltar a entrar ---------- */
+  function boneco(quem, x) {
+    return { quem: quem, x: x, y: chaoY(), vy: 0, dir: 1, walk: 0, noChao: true, sobre: null, tiroT: 0, cd: 1 };
+  }
   function sairDaNave() {
     fase = 'voa';
-    pe = { x: s.wx - 40, y: chaoY(), vy: 0, dir: 1, walk: 0, noChao: true, sobre: null };
+    fora = [boneco('bebe', s.wx - 50), boneco('amigo', s.wx + 40)];
+    pe = fora[0];
     s.y = chaoY() - 34; s.vy = 0; s.tilt = 0;
-    botaoFogo(true);
+    botaoFogo('bebe');
     G.audio.sfx('door');
-    fala('O bebé saiu da nave!');
+    G.banner('Toca na foto para escolher 👶🪖', 2400);
+    fala('Saímos os dois da nave!');
   }
   function entrarNaNave(semSom) {
     if (!pe) return;
-    pe = null;
+    pe = null; fora = null; cordas = [];
     s.sx = clamp(s.wx - camX, 80, vw() * 0.62); s.vy = -260; s.inv = Math.max(s.inv, 1);
-    botaoFogo(false);
+    botaoFogo('nave');
     if (!semSom) G.audio.sfx('door');
   }
-  // a bolinha da Força que o bebé atira a pé
-  function bolinha() {
-    const o = { x: pe.x + pe.dir * 22, y: pe.y - 46 };
+  function trocaBoneco() {
+    if (!fora) return;
+    pe = outroBoneco();
+    botaoFogo(pe.quem);
+    G.audio.sfx('pop');
+    texto(pe.quem === 'bebe' ? '👶' : '🪖', pe.x, pe.y - (pe.quem === 'bebe' ? 90 : 130));
+  }
+  // o mau mais perto para o lado para onde se está virado
+  function alvoNaFrente(o, oy, alcance, qualquerLado) {
     let melhor = null, md = 1e9;
     for (const e of ents) {
       if (!atacavel(e)) continue;
-      const b = caixa(e), dx = (b.x - o.x) * pe.dir, dy = b.y - o.y;
-      if (dx < -10 || dx > 560) continue;
-      const d = dx + Math.abs(dy) * 1.2;
-      if (d < md) { md = d; melhor = b; }
+      const b = caixa(e), dx = (b.x - o.x) * o.dir, dy = b.y - oy;
+      if ((!qualquerLado && dx < -10) || Math.abs(dx) > alcance) continue;
+      const d = Math.abs(dx) + Math.abs(dy) * 1.2;
+      if (d < md) { md = d; melhor = e; }
     }
-    let a = melhor ? Math.atan2(melhor.y - o.y, (melhor.x - o.x) * pe.dir) : 0;
+    return melhor;
+  }
+  // a bolinha da Força que o bebé atira a pé
+  function bolinha(o) {
+    const x = o.x + o.dir * 22, y = o.y - 46;
+    const e = alvoNaFrente(o, y, 560), b = e ? caixa(e) : null;
+    let a = b ? Math.atan2(b.y - y, (b.x - x) * o.dir) : 0;
     a = clamp(a, -1.1, 0.5);
-    tiros.push({ x: o.x, y: o.y, vx: Math.cos(a) * 760 * pe.dir, vy: Math.sin(a) * 760, t: 0, verde: true });
+    tiros.push({ x: x, y: y, vx: Math.cos(a) * 760 * o.dir, vy: Math.sin(a) * 760, t: 0, verde: true });
     s.forcaT = Math.max(s.forcaT, 0.25);
     G.audio.sfx('teia');
   }
+  // a espingarda comprida do amigo: raios laser compridos e rápidos
+  function espingarda(o, sozinho) {
+    const x = o.x + o.dir * 66, y = o.y - 67;
+    const e = alvoNaFrente(o, y, 700, sozinho);
+    if (sozinho && !e) return false;
+    if (e && sozinho) o.dir = caixa(e).x > o.x ? 1 : -1;
+    const b = e ? caixa(e) : null;
+    let a = b ? Math.atan2(b.y - y, (b.x - (o.x + o.dir * 66)) * o.dir) : 0;
+    a = clamp(a, -0.8, 0.5);
+    tiros.push({ x: o.x + o.dir * 66, y: y, vx: Math.cos(a) * 1300 * o.dir, vy: Math.sin(a) * 1300, t: 0, comprido: true });
+    o.tiroT = 0.12;
+    G.audio.sfx(sozinho ? 'zap' : 'pew');
+    return true;
+  }
+  // a corda com tiros: vai buscar o mau mais perto e ele fica amigo
+  function corda(o) {
+    s.cordaCd = 4;
+    const e = alvoNaFrente(o, o.y - 66, 520);
+    cordas.push({ de: o, alvo: e, t: 0, x: o.x + o.dir * 380, y: o.y - 80 });
+    G.audio.sfx('teia');
+    if (!e) fala('Falhou! Tenta outra vez.');
+  }
 
-  /* ---------- aparecer coisas ---------- */
+  /* ---------- aparecer coisas ---------- */  /* ---------- aparecer coisas ---------- */
   function escolheTipo() {
     const mix = T().mix;
     let r = Math.random(), tipo = mix[0][0];
@@ -322,7 +376,7 @@
   }
   function dispara(sozinho) {
     const o = origemTiro(), W = vw();
-    const b = alvoMaisPerto(o, W * (pe ? 0.5 : 0.62));
+    const b = alvoMaisPerto(o, W * 0.62);
     if (sozinho && !b) return false;
     let a = b ? Math.atan2(b.y - o.y, b.x - o.x) : s.tilt * 0.6;
     a = clamp(a, -0.6, 0.6);
@@ -418,7 +472,7 @@
     const I = G.input, eixo = I.axis(), ax = eixo.x, ay = eixo.y, W = vw(), chao = chaoY();
     forcaFx = Math.max(0, forcaFx - dt);
     s.forcaCd = Math.max(0, s.forcaCd - dt); s.forcaT = Math.max(0, s.forcaT - dt);
-    mostraForca(s.forcaCd <= 0);
+    mostraForca(recargaPoder() <= 0);
     updateParts(dt);
 
     if (fase === 'hiper') {
@@ -433,6 +487,10 @@
       for (const h of hudTerras) {
         const dx = I.tap.x - h.x, dy = I.tap.y - h.y;
         if (dx * dx + dy * dy < (h.r + 6) * (h.r + 6) && h.i !== terra) { hiper(h.i); return; }
+      }
+      if (fora) for (const h of hudBonecos) {
+        const dx = I.tap.x - h.x, dy = I.tap.y - h.y;
+        if (dx * dx + dy * dy < (h.r + 8) * (h.r + 8) && h.o !== pe) trocaBoneco();
       }
     }
 
@@ -470,46 +528,31 @@
       s.wx = boi.x; s.y = boi.y - 150; s.vy = 0; s.tilt = 0;
       if (I.justPressed('door')) sai();
     } else if (pe) {
-      // o bebé a pé: só ele anda; o amigo fica na nave
+      // a pé: conduzimos um; o outro vem atrás sozinho
       vel = 0;
-      // em cima de um boi de Lego o bebé vai montado: as setas mandam o BOI andar
-      const cavalga = pe.sobre && !pe.sobre.montado ? pe.sobre : null;
-      const v = cavalga ? 0 : ax * 250;
-      if (Math.abs(ax) > 0.1) pe.dir = ax > 0 ? 1 : -1;
-      if (cavalga) {
-        cavalga.vx = Math.abs(ax) > 0.1 ? ax * 190 : 0;
-        cavalga.cavalgaT = 0.15;
-        if (!cavalga.jaMontou) { cavalga.jaMontou = true; G.banner('Em cima do boi! ◀ ▶ para ele andar 🐂', 2400); }
+      andaBoneco(pe, ax, I.justPressed('jump'), true, dt, chao);
+      const o2 = outroBoneco();
+      if (o2) {
+        const alvo = pe.x - 95 * pe.dir, d = alvo - o2.x;
+        const ax2 = Math.abs(d) > 25 ? clamp(d / 60, -1, 1) : 0;
+        const salta = o2.noChao && pe.y < o2.y - 80 && Math.abs(pe.x - o2.x) < 300;
+        andaBoneco(o2, ax2, salta, false, dt, chao);
+        if (Math.abs(o2.x - pe.x) > 750) { o2.x = pe.x - 120 * pe.dir; o2.y = pe.y; o2.vy = 0; }
+        if (Math.abs(ax2) < 0.1 && Math.abs(pe.x - o2.x) < 140) o2.dir = pe.dir;
+        // o amigo, quando vem atrás, também dispara sozinho
+        o2.cd -= dt;
+        if (o2.quem === 'amigo' && o2.cd <= 0) o2.cd = espingarda(o2, true) ? 1.7 : 0.4;
       }
-      pe.x += v * dt; pe.walk += Math.abs(v) * dt;
-      if (cavalga) pe.x += cavalga.vx * dt;   // vai com o boi
-      pe.x = Math.max(30, pe.x);
-      if (I.justPressed('jump') && pe.noChao) { pe.vy = -1010; pe.noChao = false; G.audio.sfx('hop'); }
-      pe.vy += GRAV * dt;
-      const yAnt = pe.y;
-      pe.y += pe.vy * dt;
-      pe.noChao = false; pe.sobre = null;
-      if (pe.vy >= 0) {
-        for (const e of ents) {
-          if (e.tipo !== 'boi' || e.montado) continue;
-          for (const pl of topoBoi(e)) {
-            if (pe.x > pl.x0 && pe.x < pl.x1 && yAnt <= pl.y + 4 && pe.y >= pl.y) {
-              pe.y = pl.y; pe.vy = 0; pe.noChao = true; pe.sobre = e;
-              if (!e.visitado) { e.visitado = true; estrelas(2, pe.x, pe.y - 90); G.audio.sfx('tada'); fala('Em cima do boi!'); }
-            }
-          }
-        }
-      }
-      if (pe.y >= chao) { pe.y = chao; pe.vy = 0; pe.noChao = true; }
+      for (const o of fora) o.tiroT = Math.max(0, o.tiroT - dt);
       camX += (Math.max(0, pe.x - W * 0.4) - camX) * Math.min(1, dt * 4);
-      // a nave vem atrás do bebé, baixinho, e pousa quando ele pára
-      // (quando arranca, só pára mesmo ao pé dele, para a porta ficar sempre perto)
+      // a nave (vazia) vem atrás deles em piloto automático e pousa quando param
       const alvoN = pe.x - 130 * pe.dir, dist = Math.abs(s.wx - alvoN);
       if (dist > (Math.abs(ax) > 0.1 ? 150 : 30)) pe.naveVem = true; else if (dist < 12) pe.naveVem = false;
       if (pe.naveVem) s.wx += clamp(alvoN - s.wx, -300 * dt, 300 * dt);
       s.y += ((pe.naveVem ? chao - 90 : chao - 34) - s.y) * Math.min(1, dt * 3);
       s.tilt *= 0.9;
       if (I.justPressed('door') && pertoDaNave()) entrarNaNave();
+      else if (I.justPressed('chama')) trocaBoneco();
     } else {
       const parado = boss && boss.estado === 'mau' && camX >= boss.trava;
       vel = parado ? 0 : 200 + Math.max(0, ax) * 150 - Math.max(0, -ax) * 110;
@@ -530,13 +573,20 @@
     mostraPorta(!!boi || (fase === 'voa' && !pe && T().id !== 'espaco') || pertoDaNave());
 
     // disparar: o amigo das pistolas (segurar dispara sempre) e às vezes sozinho
+    s.cordaCd = Math.max(0, s.cordaCd - dt);
     if (fase !== 'oficina') {
       if (I.isHeld('fire') && s.cdTiro <= 0) {
-        if (pe) { bolinha(); s.cdTiro = 0.34; } else if (fase !== 'pousa') { dispara(false); s.cdTiro = 0.3; }
+        if (pe && pe.quem === 'amigo') { espingarda(pe, false); s.cdTiro = 0.28; }
+        else if (pe) { bolinha(pe); s.cdTiro = 0.34; }
+        else if (fase !== 'pousa') { dispara(false); s.cdTiro = 0.3; }
       }
-      if (s.cdAmigo <= 0) s.cdAmigo = dispara(true) ? 2.6 : 0.5;
-      if (I.justPressed('horn') && s.forcaCd <= 0) forca();
+      if (!fora && s.cdAmigo <= 0) s.cdAmigo = dispara(true) ? 2.6 : 0.5;
+      if (I.justPressed('horn')) {
+        if (pe && pe.quem === 'amigo') { if (s.cordaCd <= 0) corda(pe); }
+        else if (s.forcaCd <= 0) forca();
+      }
     }
+    updateCordas(dt);
 
     // aparecer maus, estrelas e a nave-mãe
     while (prox < camX + W + 260 && prox < LEN - 500) {
@@ -569,6 +619,57 @@
     }
     if (I.justPressed('debug9')) magoa(s.wx, s.y);
   };
+
+  // anda, salta e põe-se de pé no chão ou em cima dos bois de Lego
+  function andaBoneco(o, ax, salta, conduzido, dt, chao) {
+    // em cima de um boi, quem conduzimos vai montado: as setas mandam o BOI andar
+    const cavalga = o.sobre && !o.sobre.montado ? o.sobre : null;
+    const v = cavalga && conduzido ? 0 : ax * (o.quem === 'amigo' ? 240 : 250);
+    if (Math.abs(ax) > 0.1) o.dir = ax > 0 ? 1 : -1;
+    if (cavalga && conduzido) {
+      cavalga.vx = Math.abs(ax) > 0.1 ? ax * 190 : 0;
+      cavalga.cavalgaT = 0.15;
+      if (!cavalga.jaMontou) { cavalga.jaMontou = true; G.banner('Em cima do boi! ◀ ▶ para ele andar 🐂', 2400); }
+    }
+    o.x += v * dt; o.walk += Math.abs(v) * dt;
+    if (cavalga) o.x += cavalga.vx * dt;   // vai com o boi
+    o.x = Math.max(30, o.x);
+    if (salta && o.noChao) { o.vy = -1010; o.noChao = false; if (conduzido) G.audio.sfx('hop'); }
+    o.vy += GRAV * dt;
+    const yAnt = o.y;
+    o.y += o.vy * dt;
+    o.noChao = false; o.sobre = null;
+    if (o.vy >= 0) {
+      for (const e of ents) {
+        if (e.tipo !== 'boi' || e.montado) continue;
+        for (const pl of topoBoi(e)) {
+          if (o.x > pl.x0 && o.x < pl.x1 && yAnt <= pl.y + 4 && o.y >= pl.y) {
+            o.y = pl.y; o.vy = 0; o.noChao = true; o.sobre = e;
+            if (conduzido && !e.visitado) { e.visitado = true; estrelas(2, o.x, o.y - 90); G.audio.sfx('tada'); fala('Em cima do boi!'); }
+          }
+        }
+      }
+    }
+    if (o.y >= chao) { o.y = chao; o.vy = 0; o.noChao = true; }
+  }
+
+  // a corda voa até ao mau, dá uns tiros e ele fica amigo
+  function updateCordas(dt) {
+    for (let i = cordas.length - 1; i >= 0; i--) {
+      const k = cordas[i];
+      k.t += dt;
+      if (k.alvo && k.t >= 0.3 && !k.feito) {
+        k.feito = true;
+        const b = caixa(k.alvo);
+        if (b) { faiscas(b.x, b.y, 10, '#ffd60a'); G.audio.sfx('zap'); }
+        if (atacavel(k.alvo)) {
+          if (k.alvo.tipo === 'navemae') acerta(k.alvo, 4);
+          else { k.alvo.hp = 0; converte(k.alvo); }
+        }
+      }
+      if (k.t > 0.75 || !fora) cordas.splice(i, 1);
+    }
+  }
 
   function updateEnts(dt, W, chao) {
     for (let i = ents.length - 1; i >= 0; i--) {
@@ -817,7 +918,7 @@
   }
 
   // a nossa nave, de lado e virada para a direita
-  function navePrincipal(c, t, tiro, mao, semBebe) {
+  function navePrincipal(c, t, tiro, mao, semBebe) {   // semBebe = saíram os dois
     // chama do motor
     const ch = 22 + Math.sin(t * 30) * 6 + vel * 0.06;
     let g = c.createLinearGradient(-86 - ch, 0, -80, 0);
@@ -842,7 +943,7 @@
     c.fillStyle = '#343a40'; c.fillRect(70, 12, 30, 5);
     // cúpula de vidro com o bebé e o amigo lá dentro
     if (!semBebe) bebe(c, -2, -26, 0.95, t, mao);
-    amigo(c, 34, -28, 0.95, t, tiro);
+    if (!semBebe) amigo(c, 34, -28, 0.95, t, tiro);
     c.fillStyle = 'rgba(160,220,255,.38)';
     c.beginPath(); c.ellipse(16, -20, 46, 30, 0, Math.PI, 0); c.fill();
     c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 2.5;
@@ -1428,6 +1529,13 @@
     // os nossos tiros (azuis) e os deles (vermelhos ou gosma verde)
     c.lineCap = 'round';
     for (const m of tiros) {
+      if (m.comprido) {
+        const a2 = Math.atan2(m.vy, m.vx);
+        c.strokeStyle = '#4cc9f0'; c.lineWidth = 8;
+        c.beginPath(); c.moveTo(m.x, m.y); c.lineTo(m.x - Math.cos(a2) * 62, m.y - Math.sin(a2) * 62); c.stroke();
+        c.strokeStyle = '#ffffff'; c.lineWidth = 3; c.stroke();
+        continue;
+      }
       if (m.verde) {
         c.fillStyle = 'rgba(158,240,26,.35)'; c.beginPath(); c.arc(m.x, m.y, 16, 0, TAU); c.fill();
         c.fillStyle = '#d8f3a0'; c.beginPath(); c.arc(m.x, m.y, 8, 0, TAU); c.fill();
@@ -1445,10 +1553,15 @@
       navePrincipal(c, t, s.tiroT > 0, s.forcaT > 0, !!pe);
       c.restore();
       if (fase === 'oficina') oficina(c, t);
-      if (pe) bebeAPe(c, t);
+      if (fora) {
+        const o2 = outroBoneco();
+        desenhaBoneco(c, o2, t, false);
+        desenhaBoneco(c, pe, t, true);
+        desenhaCordas(c, t);
+      }
     }
     if (forcaFx > 0) {
-      const o = boi ? { x: boi.x + 30, y: boi.y - 150 } : (pe ? { x: pe.x, y: pe.y - 46 } : { x: s.wx, y: s.y - 26 });
+      const o = boi ? { x: boi.x + 30, y: boi.y - 150 } : (pe ? { x: pe.x, y: pe.y - 50 } : { x: s.wx, y: s.y - 26 });
       c.strokeStyle = 'rgba(158,240,26,' + forcaFx + ')'; c.lineWidth = 8;
       for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(o.x, o.y, (1 - forcaFx) * (300 + k * 200) + 20, 0, TAU); c.stroke(); }
     }
@@ -1486,22 +1599,84 @@
     hud(c, t);
   };
 
-  // o bebé cá fora, a pé (só ele anda; vira-se para onde vai)
-  function bebeAPe(c, t) {
-    const k = 1.7;
-    c.save(); c.translate(pe.x, pe.y);
-    c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 1, 20, 5, 0, 0, TAU); c.fill();
-    if (s.inv > 0 && Math.floor(t * 12) % 2 === 0) c.globalAlpha = 0.45;
-    if (pe.dir < 0) c.scale(-1, 1);
-    const w = pe.noChao ? Math.sin(pe.walk / 12) * 6 : 3;
-    c.fillStyle = '#8fbf6f';
-    c.beginPath(); c.ellipse(-8 + w, -5, 8, 5, 0, 0, TAU); c.ellipse(8 - w, -5, 8, 5, 0, 0, TAU); c.fill();
-    bebe(c, 0, -8 - 24 * k - (pe.noChao ? Math.abs(Math.sin(pe.walk / 12)) * 2 : 0), k, t, s.forcaT > 0);
-    c.restore();
+  // quem anda a pé; o que conduzimos leva uma setinha amarela por cima
+  function desenhaBoneco(c, o, t, conduzido) {
+    if (o.quem === 'bebe') bebeAPe(c, o, t, conduzido); else amigoAPe(c, o, t, conduzido);
+    if (conduzido) {
+      const y = o.y - (o.quem === 'bebe' ? 96 : 132) + Math.sin(t * 6) * 4;
+      c.fillStyle = '#ffd60a'; c.strokeStyle = '#7a5a00'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(o.x - 10, y - 10); c.lineTo(o.x + 10, y - 10); c.lineTo(o.x, y + 2); c.closePath(); c.fill(); c.stroke();
+    }
     // a dizer onde é a porta da nave para voltar a entrar
-    if (pertoDaNave()) {
+    if (conduzido && pertoDaNave()) {
       c.font = '30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
       c.fillText('🚪', s.wx, s.y - 70 + Math.sin(t * 5) * 5);
+    }
+  }
+  function bebeAPe(c, o, t, conduzido) {
+    const k = 1.7;
+    c.save(); c.translate(o.x, o.y);
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 1, 20, 5, 0, 0, TAU); c.fill();
+    if (conduzido && s.inv > 0 && Math.floor(t * 12) % 2 === 0) c.globalAlpha = 0.45;
+    if (o.dir < 0) c.scale(-1, 1);
+    const w = o.noChao ? Math.sin(o.walk / 12) * 6 : 3;
+    c.fillStyle = '#8fbf6f';
+    c.beginPath(); c.ellipse(-8 + w, -5, 8, 5, 0, 0, TAU); c.ellipse(8 - w, -5, 8, 5, 0, 0, TAU); c.fill();
+    bebe(c, 0, -8 - 24 * k - (o.noChao ? Math.abs(Math.sin(o.walk / 12)) * 2 : 0), k, t, s.forcaT > 0 && conduzido);
+    c.restore();
+  }
+  // o amigo a pé: capacete prateado, capa e a espingarda comprida
+  function amigoAPe(c, o, t, conduzido) {
+    c.save(); c.translate(o.x, o.y);
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 1, 22, 5, 0, 0, TAU); c.fill();
+    if (conduzido && s.inv > 0 && Math.floor(t * 12) % 2 === 0) c.globalAlpha = 0.45;
+    if (o.dir < 0) c.scale(-1, 1);
+    const w = o.noChao ? Math.sin(o.walk / 14) * 8 : 4;
+    // capa
+    c.fillStyle = '#7f5539';
+    c.beginPath(); c.moveTo(-12, -80); c.quadraticCurveTo(-28, -50, -24 + Math.sin(t * 4) * 3, -26); c.lineTo(-6, -34); c.closePath(); c.fill();
+    // pernas e botas
+    c.strokeStyle = '#5c636a'; c.lineWidth = 10; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-6, -42); c.lineTo(-6 - w, -6); c.moveTo(6, -42); c.lineTo(6 + w, -6); c.stroke();
+    c.fillStyle = '#343a40'; c.fillRect(-13 - w, -9, 14, 9); c.fillRect(-1 + w, -9, 14, 9);
+    // armadura
+    c.fillStyle = '#adb5bd'; G.gfx.rr(c, -15, -86, 30, 46, 8); c.fill();
+    c.fillStyle = '#ced4da'; G.gfx.rr(c, -11, -82, 22, 18, 5); c.fill();
+    c.fillStyle = '#6b4226'; c.fillRect(-15, -48, 30, 6);
+    c.strokeStyle = '#d4a373'; c.lineWidth = 3;
+    c.beginPath(); c.arc(-9, -38, 6, 0, TAU); c.stroke();   // a corda enrolada no cinto
+    // capacete
+    c.fillStyle = '#dee2e6';
+    c.beginPath(); c.arc(0, -102, 15, Math.PI, 0); c.lineTo(15, -88); c.lineTo(-15, -88); c.closePath(); c.fill();
+    c.fillStyle = '#212529'; G.gfx.rr(c, -3, -106, 18, 5, 2); c.fill(); c.fillRect(7, -106, 5, 15);
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.arc(-6, -110, 3.5, 0, TAU); c.fill();
+    // a espingarda comprida
+    c.fillStyle = '#343a40';
+    c.fillRect(-12, -71, 76, 7); c.fillRect(-18, -71, 12, 12); c.fillRect(18, -78, 18, 5);
+    c.fillStyle = '#4cc9f0'; c.fillRect(62, -71, 6, 7);
+    c.strokeStyle = '#adb5bd'; c.lineWidth = 8;
+    c.beginPath(); c.moveTo(8, -80); c.lineTo(26, -66); c.stroke();
+    if (o.tiroT > 0) { c.fillStyle = '#7bdff2'; c.beginPath(); c.arc(72, -67, 10, 0, TAU); c.fill(); }
+    c.restore();
+  }
+  // a corda com tiros a voar até ao mau
+  function desenhaCordas(c, t) {
+    for (const k of cordas) {
+      const o = k.de, x0 = o.x + o.dir * 18, y0 = o.y - 66;
+      const b = k.alvo ? caixa(k.alvo) : null;
+      const xa = b ? b.x : k.x, ya = b ? b.y : k.y;
+      const f = Math.min(1, k.t / 0.3);
+      const x1 = x0 + (xa - x0) * f, y1 = y0 + (ya - y0) * f;
+      c.strokeStyle = '#d4a373'; c.lineWidth = 4; c.lineCap = 'round';
+      c.beginPath();
+      for (let i = 0; i <= 16; i++) {
+        const u = i / 16, x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u + Math.sin(u * 14 + t * 30) * 5 * (1 - u * 0.5);
+        if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      }
+      c.stroke();
+      c.fillStyle = '#ffd60a';
+      for (let i = 0; i < 4; i++) { const u = ((t * 3 + i / 4) % 1) * f; c.beginPath(); c.arc(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, 4, 0, TAU); c.fill(); }
+      if (b && k.t > 0.3) { c.strokeStyle = '#d4a373'; c.lineWidth = 4; c.beginPath(); c.ellipse(b.x, b.y, b.rx * 0.7, 12, 0, 0, TAU); c.stroke(); }
     }
   }
 
@@ -1545,12 +1720,13 @@
     // a Força do bebé (a encher)
     c.save(); c.translate(32, 124);
     c.fillStyle = vazio; c.beginPath(); c.arc(0, 0, 20, 0, TAU); c.fill();
-    const pronta = s.forcaCd <= 0;
+    const pronta = recargaPoder() <= 0;
     c.strokeStyle = pronta ? '#9ef01a' : '#ffffff'; c.lineWidth = 5;
-    c.beginPath(); c.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - s.forcaCd / 9)); c.stroke();
+    const amigoPe = pe && pe.quem === 'amigo';
+    c.beginPath(); c.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - (amigoPe ? s.cordaCd / 4 : s.forcaCd / 9))); c.stroke();
     c.font = (pronta ? 22 + Math.sin(t * 6) * 2 : 20) + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = '#000';
-    c.fillText(boi ? '🐂' : '✋', 0, 1);
+    c.fillText(boi ? '🐂' : (pe && pe.quem === 'amigo' ? '🪢' : '✋'), 0, 1);
     c.restore();
     // as sete terras: a de agora maior, com aro amarelo; tocar numa salta para lá
     hudTerras = [];
@@ -1562,6 +1738,24 @@
       c.fillStyle = '#000';
       c.fillText(TERRAS[i].ic, x, y + 1);
       hudTerras.push({ i: i, x: x * k, y: y * k, r: 19 * k });
+    }
+    // cá fora: as fotos do bebé e do amigo (toca-se para escolher quem se conduz)
+    hudBonecos = [];
+    if (fora) {
+      for (let i = 0; i < 2; i++) {
+        const o = fora[i], x = 32 + i * 56, y = 200, sel = o === pe;
+        c.fillStyle = sel ? 'rgba(255,214,10,.95)' : 'rgba(255,255,255,.55)';
+        c.beginPath(); c.arc(x, y, sel ? 25 : 21, 0, TAU); c.fill();
+        c.strokeStyle = sel ? '#7a5a00' : 'rgba(0,0,0,.3)'; c.lineWidth = 3; c.stroke();
+        c.save(); c.beginPath(); c.arc(x, y, sel ? 22 : 18, 0, TAU); c.clip();
+        if (o.quem === 'bebe') bebe(c, x, y + 4, 1.05, t, false);
+        else {
+          c.fillStyle = '#dee2e6'; c.beginPath(); c.arc(x, y + 2, 15, Math.PI, 0); c.lineTo(x + 15, y + 18); c.lineTo(x - 15, y + 18); c.closePath(); c.fill();
+          c.fillStyle = '#212529'; G.gfx.rr(c, x - 4, y - 2, 18, 5, 2); c.fill(); c.fillRect(x + 6, y - 2, 5, 15);
+        }
+        c.restore();
+        hudBonecos.push({ o: o, x: x * k, y: y * k, r: 25 * k });
+      }
     }
     // quanto falta para o portal
     const f = clamp(camX / LEN, 0, 1);
@@ -1583,7 +1777,7 @@
 
   S.debug = function () {
     return {
-      fase: fase, terra: T().id, pe: pe ? { x: Math.round(pe.x), y: Math.round(pe.y), sobre: !!pe.sobre } : null, naveX: Math.round(s.wx), ronda: ronda, camX: Math.round(camX), sy: Math.round(s.y), coracoes: s.coracoes,
+      fase: fase, terra: T().id, pe: pe ? { quem: pe.quem, x: Math.round(pe.x), y: Math.round(pe.y), sobre: !!pe.sobre } : null, outro: outroBoneco() ? Math.round(outroBoneco().x) : null, cordas: cordas.length, naveX: Math.round(s.wx), ronda: ronda, camX: Math.round(camX), sy: Math.round(s.y), coracoes: s.coracoes,
       ents: ents.length, maus: ents.filter(atacavel).length, tiros: tiros.length, tirosM: tirosM.length,
       boi: !!boi, boss: boss ? boss.estado + ':' + boss.hp : null, stars: G.state.stars, forcaCd: +s.forcaCd.toFixed(1)
     };
