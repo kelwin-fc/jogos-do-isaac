@@ -472,10 +472,17 @@
     } else if (pe) {
       // o bebé a pé: só ele anda; o amigo fica na nave
       vel = 0;
-      const v = ax * 250;
+      // em cima de um boi de Lego o bebé vai montado: as setas mandam o BOI andar
+      const cavalga = pe.sobre && !pe.sobre.montado ? pe.sobre : null;
+      const v = cavalga ? 0 : ax * 250;
       if (Math.abs(ax) > 0.1) pe.dir = ax > 0 ? 1 : -1;
+      if (cavalga) {
+        cavalga.vx = Math.abs(ax) > 0.1 ? ax * 190 : 0;
+        cavalga.cavalgaT = 0.15;
+        if (!cavalga.jaMontou) { cavalga.jaMontou = true; G.banner('Em cima do boi! ◀ ▶ para ele andar 🐂', 2400); }
+      }
       pe.x += v * dt; pe.walk += Math.abs(v) * dt;
-      if (pe.sobre && !pe.sobre.montado) pe.x += pe.sobre.vx * dt;   // à boleia no boi
+      if (cavalga) pe.x += cavalga.vx * dt;   // vai com o boi
       pe.x = Math.max(30, pe.x);
       if (I.justPressed('jump') && pe.noChao) { pe.vy = -1010; pe.noChao = false; G.audio.sfx('hop'); }
       pe.vy += GRAV * dt;
@@ -638,7 +645,13 @@
           break;
         case 'boi':
           if (e.montado) break;
+          // sem o bebé em cima, o boi volta a passear sozinho
+          if (e.cavalgaT > 0) e.cavalgaT -= dt; else e.vx = 45;
           e.x += e.vx * dt; e.passo += e.vx * dt;
+          if (e.cavalgaT > 0 && e.vx !== 0) {
+            // montado pelo bebé, o boi empurra os maus do chão e eles ficam amigos
+            for (const o of ents) if (atacavel(o) && o.noChao && Math.abs(o.x - (e.x + Math.sign(e.vx) * 200)) < 70) { o.hp = 0; converte(o); }
+          }
           e.vy += GRAV * dt; e.y += e.vy * dt;
           if (e.y >= chao) { e.y = chao; e.vy = 0; e.noChao = true; }
           // voar para a porta do boi = entrar
