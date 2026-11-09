@@ -20,13 +20,20 @@
     menuEl.style.setProperty('--fit', '1');
     if (!document.body.classList.contains('splash-on')) return;
     const cs = getComputedStyle(splashEl);
-    const availH = splashEl.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     const availW = splashEl.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const r = menuEl.getBoundingClientRect();
-    if (!r.height || !r.width || availH <= 0 || availW <= 0) return;
-    const k = Math.min(1, availH / r.height, availW / r.width);
+    if (!r.height || !r.width || availW <= 0) return;
+    // só se encolhe por falta de LARGURA; a falta de altura resolve-se a deslizar
+    const k = Math.min(1, availW / r.width);
     menuEl.style.setProperty('--fit', k.toFixed(4));
+    verMais();
   };
+  // a seta ⬇ aparece quando há jogos escondidos lá em baixo
+  function verMais() {
+    const falta = splashEl.scrollHeight - splashEl.clientHeight - splashEl.scrollTop;
+    splashEl.classList.toggle('tem-mais', falta > 24);
+  }
+  splashEl.addEventListener('scroll', verMais, { passive: true });
 
   function resize() {
     const dpr = Math.min(2, window.devicePixelRatio || 1);

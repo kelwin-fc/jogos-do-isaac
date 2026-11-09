@@ -422,20 +422,25 @@ body.splash-on #btnEstilo { display: block; }
 body.splash-on.pode-instalar #btnInstalar { display: block; }
 
 /* ---------- splash ---------- */
-/* Tudo tem de caber em qualquer ecrã: os tamanhos olham para a largura E para a
-   altura, e o main.js encolhe o bloco todo (--fit) se ainda assim faltar espaço. */
+/* Os tamanhos olham para a largura E para a altura. Com muitos jogos já não cabia
+   tudo e o bloco encolhia até os botões ficarem minúsculos: agora, se faltar altura,
+   a capa desliza com o dedo (e aparece uma seta ⬇ a dizer que há mais jogos em
+   baixo). O main.js só encolhe (--fit) se faltar LARGURA. */
 #splash {
   position: fixed;
   inset: 0;
   display: none;
-  align-items: center;
+  align-items: flex-start;   /* com o margin:auto do .menu fica ao centro quando cabe */
   justify-content: center;
   padding:
     calc(8px + env(safe-area-inset-top))
     calc(8px + env(safe-area-inset-right))
     calc(8px + env(safe-area-inset-bottom))
     calc(8px + env(safe-area-inset-left));
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   z-index: 20;
   background: rgba(150, 215, 255, 0.15);
 }
@@ -446,9 +451,32 @@ body.splash-on #splash { display: flex; }
   flex-direction: column;
   align-items: center;
   gap: min(2.2vh, 22px);
+  margin: auto;
   transform: scale(var(--fit, 1));
-  transform-origin: center center;
+  transform-origin: center top;
 }
+/* a seta que diz "há mais jogos lá em baixo" */
+#maisJogos {
+  position: fixed;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  margin-left: -28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: 32px;
+  line-height: 56px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  animation: setaDesce 1s ease-in-out infinite;
+  z-index: 21;
+}
+#splash.tem-mais #maisJogos { opacity: 1; }
+@keyframes setaDesce { 50% { transform: translateY(8px); } }
 #splash .jogos {
   display: flex;
   flex-direction: column;
@@ -559,9 +587,18 @@ body.menu-mosaico .play {
 body.menu-mosaico .play .ic { font-size: 1.9em; line-height: 1.1; }
 body.menu-mosaico .play .nm { letter-spacing: 0.02em; }
 
-/* telemóvel deitado: há largura para quatro por linha */
-@media (max-height: 620px) {
-  body.menu-mosaico #splash .jogos { --cols: 4; width: min(96vw, 736px); }
+/* ecrã deitado (computador, tablet, telemóvel deitado): cinco por linha e o título
+   numa linha só, para caberem todos sem deslizar; muito largo, seis por linha */
+@media (min-aspect-ratio: 5/4) {
+  body.menu-mosaico #splash .jogos { --cols: 5; width: min(96vw, 920px); }
+  body.menu-mosaico #splash .title br { display: none; }
+  body.menu-mosaico #splash .title { font-size: min(8vw, 7vh, 64px); }
+  body.menu-mosaico #splash .sub { display: none; }
+  /* letras pela largura, para não ficarem minúsculas no telemóvel deitado (aí desliza) */
+  body.menu-mosaico .play { font-size: min(2.2vw, 4.2vh, 22px); }
+}
+@media (min-aspect-ratio: 16/9) {
+  body.menu-mosaico #splash .jogos { --cols: 6; width: min(96vw, 1080px); }
 }
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
