@@ -121,6 +121,7 @@
     s = { sx: 200, y: 220, vy: 0, wx: 200, inv: 2, flash: 0, tilt: 0, cdTiro: 0, cdAmigo: 1.5, tiroT: 0,
       coracoes: MAXC, forcaCd: 0, forcaT: 0, cordaCd: 0 };
     ronda = 1; tempo = 0; forcaFx = 0; hudTerras = [];
+    G.audio.tema = HW ? 'halloween' : 'espaco';   // a música de aventura da nave
     dentroVisivel = null; forcaVisivel = null; fogoAPe = null;
     comecaTerra(0);
   };
@@ -292,6 +293,7 @@
     else if (tipo === 'lobisomem') { e.hp = 4 + (r > 0 ? 1 : 0); e.vx = -rnd(190, 240); }
     else if (tipo === 'bruxa') { e.hp = 3 + (r > 0 ? 1 : 0); e.noChao = false; e.y0 = rnd(tetoY() - 10, Math.max(tetoY(), chao - 220)); e.y = e.y0; e.rel = rnd(95, 130); e.cd = rnd(0.9, 1.8); }
     else if (tipo === 'aranha') { e.hp = 3 + (r > 0 ? 1 : 0); e.noChao = false; e.y0 = rnd(tetoY() + 30, chao - 170); e.y = e.y0; e.amp = rnd(40, 80); e.cd = rnd(0.9, 1.8); }
+    else if (tipo === 'campa') { e.hp = 2; e.abreT = -1; }
     else if (tipo === 'susto') { e.hp = 5 + (r > 0 ? 1 : 0); e.estado = 'escondido'; e.sobeT = 0; e.cd = rnd(0.8, 1.4); }
     e.hpMax = e.hp;
     ents.push(e);
@@ -339,6 +341,7 @@
       case 'lobisomem': return { x: e.x, y: e.y - 52, rx: 64, ry: 46 };
       case 'bruxa': return { x: e.x, y: e.y - 14, rx: 54, ry: 44 };
       case 'aranha': return { x: e.x, y: e.y, rx: 44, ry: 36 };
+      case 'campa': return { x: e.x, y: e.y - 50, rx: 62, ry: 50 };
       case 'susto': return { x: e.x, y: e.y - 110 * e.sobeT, rx: 70, ry: Math.max(30, 100 * e.sobeT) };
       case 'reiabobora': return { x: e.x, y: e.y, rx: 125, ry: 115 };
     }
@@ -423,6 +426,19 @@
         break;
       case 'aranha':
         e.estado = 'bom'; e.sobe = true; G.audio.sfx('giggle'); estrelas(1, e.x, e.y - 60);
+        break;
+      case 'campa':
+        // a campa abre: às vezes sai um esqueleto, às vezes estrelas e um coração
+        e.estado = 'aberta'; e.abreT = 0; G.audio.sfx('tampa'); G.shake = 0.3;
+        if (Math.random() < 0.5) {
+          const o = spawn('esqueleto', e.x + 6); o.y = e.y - 30; o.vy = -760; o.saiCampa = true;
+          texto('💀', e.x, e.y - 130); fala('A campa abriu! Saiu um esqueleto!');
+        } else {
+          for (let k = 0; k < 4; k++) pickups.push({ tipo: 'estrela', x: e.x - 60 + k * 40, y: e.y - 120 - Math.sin(k / 3 * Math.PI) * 50, t: 0 });
+          pickups.push({ tipo: 'coracao', x: e.x, y: e.y - 220, t: 0 });
+          fala('A campa abriu! Tinha um tesouro!');
+        }
+        estrelas(1, e.x, e.y - 100);
         break;
       case 'susto':
         e.estado = 'bom'; e.sobeT = 1; coracoesSobem(e.x, e.y - 220, 4); G.audio.sfx('giggle'); estrelas(3, e.x, e.y - 250);
@@ -677,6 +693,7 @@
     // aparecer maus, estrelas e a nave-mãe
     while (prox < camX + W + 260 && prox < LEN - 500) {
       spawn(escolheTipo(), prox);
+      if (HW && T().id === 'cemiterio' && Math.random() < 0.4) spawn('campa', prox + rnd(140, 200));
       prox += rnd(T().gap[0], T().gap[1]) * Math.max(0.7, 1 - (ronda - 1) * 0.1);
       if (T().id === 'lego' && Math.random() < 0.28 && ents.filter(function (e) { return e.tipo === 'boi'; }).length < 2) spawn('boi', prox + 300);
     }
@@ -912,6 +929,9 @@
           e.cd -= dt;
           if (e.cd <= 0 && sx > W * 0.3 && sx < W - 30) { tiroMau(e.x - 10, e.y + 10, 'teia'); G.audio.sfx('teia'); e.cd = rnd(1.3, 2.1) * cdHW(); }
           break;
+        case 'campa':
+          if (e.abreT >= 0) e.abreT += dt;
+          break;
         case 'susto':
           if (e.estado === 'escondido') {
             // escondido no escuro... até chegarmos perto: SALTA e assusta!
@@ -948,7 +968,7 @@
       // encostar a um mau magoa a nave; dentro do boi, o boi empurra-os e ficam amigos
       if (mau && e.estado === 'mau') {
         const b = caixa(e);
-        if (!b) continue;
+        if (!b || e.tipo === 'campa') continue;   // as campas não magoam
         if (boi) {
           if (e.noChao && Math.abs(e.x - (boi.x + 60)) < 230 && e.y > boi.y - 240) { e.hp = 0; converte(e); }
         } else if (fase === 'voa' && toca(b, eu().x, eu().y, eu().mx, eu().my)) {
@@ -1685,6 +1705,7 @@
       else if (e.tipo === 'abobora') abobora(c, e, t);
       else if (e.tipo === 'esqueleto') esqueleto(c, e, t);
       else if (e.tipo === 'lobisomem') lobisomem(c, e, t);
+      else if (e.tipo === 'campa') campa(c, e, t);
       else if (e.tipo === 'susto') susto(c, e, t);
     }
     for (const p of pickups) {
@@ -2133,6 +2154,34 @@
     }
     c.restore();
     pontos(c, e.x, e.y - 56, e);
+  }
+
+  // a campa do cemitério: com tiros a tampa de pedra abre
+  function campa(c, e, t) {
+    const a = e.abreT >= 0 ? Math.min(1, e.abreT / 0.5) : 0;
+    c.save(); c.translate(e.x, e.y);
+    if (e.flutua > 0 && a === 0) c.rotate(Math.sin(e.t * 9) * 0.05);
+    const pedra = e.pisca > 0 ? '#ffffff' : '#8d99ae';
+    // lápide atrás
+    c.fillStyle = '#6c757d';
+    c.beginPath(); c.moveTo(-30, -40); c.lineTo(-30, -96); c.arc(0, -96, 30, Math.PI, 0); c.lineTo(30, -40); c.closePath(); c.fill();
+    c.fillStyle = '#495057'; c.fillRect(-4, -116, 8, 46); c.fillRect(-16, -104, 32, 8);
+    // a caixa de pedra
+    c.fillStyle = pedra; c.fillRect(-60, -40, 120, 40);
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-60, -10, 120, 10);
+    if (a > 0) {
+      // buraco aberto, com luz a sair
+      c.fillStyle = '#120a18'; c.fillRect(-52, -46, 104, 10);
+      c.fillStyle = 'rgba(255,214,10,' + (0.5 * (1 - Math.min(1, e.abreT / 2))) + ')';
+      c.beginPath(); c.moveTo(-50, -42); c.lineTo(50, -42); c.lineTo(80, -160); c.lineTo(-80, -160); c.closePath(); c.fill();
+    }
+    // a tampa: escorrega para o lado e cai
+    c.save(); c.translate(a * 90, -44 + a * 30); c.rotate(a * 0.5);
+    c.fillStyle = e.pisca > 0 ? '#ffffff' : '#adb5bd'; c.fillRect(-64, -8, 128, 12);
+    c.fillStyle = 'rgba(0,0,0,.15)'; c.fillRect(-64, 0, 128, 4);
+    c.restore();
+    c.restore();
+    pontos(c, e.x, e.y - 140, e);
   }
 
   // o monstro que salta do chão e assusta (só na casa assombrada)

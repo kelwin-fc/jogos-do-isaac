@@ -67,6 +67,7 @@
   let cur = null;
   G.setScene = function (name) {
     cur = G.scenes[name];
+    G.audio.tema = null;   // o Star Wars e o Halloween põem o tema deles
     document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('scene-' + name);
     if (name === 'halloween') document.body.classList.add('scene-starwars');   // os mesmos botões do Star Wars
@@ -85,6 +86,7 @@
 
   G.goMenu = function () {
     cur = null;
+    G.audio.tema = null;
     document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('splash-on');
     if (G.audio.engineSet) G.audio.engineSet(0);

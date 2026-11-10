@@ -151,15 +151,47 @@
 
   // Musiquinha suave: arpejo pentatónico em loop, volume baixo.
   const NOTES = [523, 587, 659, 784, 880, 784, 659, 587];
+  // Temas de aventura (melodias nossas, feitas para os jogos da nave): A.tema = 'espaco' ou
+  // 'halloween'; null = a musiquinha suave de sempre. Cada passo é uma colcheia (150 ms).
+  const NF = { A2: 110, E2: 82.4, G2: 98, C3: 130.8, D3: 146.8, E3: 164.8, F3: 174.6, G3: 196, A3: 220, B3: 246.9,
+    C4: 261.6, D4: 293.7, 'D#4': 311.1, E4: 329.6, F4: 349.2, G4: 392, 'G#4': 415.3, A4: 440, B4: 493.9, C5: 523.3, D5: 587.3, E5: 659.3 };
+  function pauta(txt) { return txt.trim().split(/\s+/).map(function (n) { return n === '.' ? null : NF[n]; }); }
+  const TEMAS = {
+    espaco: { som: 'sawtooth', vol: 0.05, baixo: [NF.C3, NF.F3, NF.C3, NF.G2], mel: pauta(
+      'C4 . E4 . G4 . C5 . . . G4 . E4 . G4 . ' +
+      'A4 . . . F4 . A4 . C5 . . . B4 . . . ' +
+      'G4 . C5 . E5 . . . D5 . C5 . B4 . A4 . ' +
+      'G4 . . . E4 . F4 . G4 . . . . . . .') },
+    halloween: { som: 'triangle', vol: 0.07, baixo: [NF.A2, NF.D3, NF.A2, NF.E2], mel: pauta(
+      'A3 . C4 . E4 . A4 . . . G#4 . . . E4 . ' +
+      'F4 . . . E4 . D4 . C4 . . . B3 . . . ' +
+      'A3 . C4 . E4 . F4 . E4 . . . D#4 . E4 . ' +
+      'A3 . . . . . . . E3 . . . A3 . . .') }
+  };
+  A.tema = null;
   A.startMusic = function () {
     if (A.musicTimer) return;
     A.musicTimer = setInterval(function () {
       if (!A.on || !A.ctx || (window.G && G.paused)) return;
-      const f = NOTES[A.musicStep % NOTES.length];
+      const step = A.musicStep++;
+      const tm = TEMAS[A.tema];
+      if (tm) {
+        const n = tm.mel.length, i = step % n, f = tm.mel[i];
+        if (f) {
+          let d = 1; while (d < 8 && !tm.mel[(i + d) % n]) d++;
+          beep(f, d * 0.15 * 0.95, tm.som, tm.vol);
+          beep(f * 2, d * 0.15 * 0.6, 'sine', tm.vol * 0.35);
+        }
+        if (i % 8 === 0) beep(tm.baixo[Math.floor(i / 16) % 4] , 1.1, 'sine', 0.09);
+        if (i % 4 === 0) puff(0.07, A.tema === 'espaco' ? 0.07 : 0.05);
+        return;
+      }
+      if (step % 2) return;
+      const k = step / 2;
+      const f = NOTES[k % NOTES.length];
       beep(f, 0.28, 'triangle', 0.045);
-      if (A.musicStep % 4 === 0) beep(f / 2, 0.5, 'sine', 0.03);
-      A.musicStep++;
-    }, 300);
+      if (k % 4 === 0) beep(f / 2, 0.5, 'sine', 0.03);
+    }, 150);
   };
 
   // Voz do próprio telemóvel/computador, em português (sem ficheiros de som).
