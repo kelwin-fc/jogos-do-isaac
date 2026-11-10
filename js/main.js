@@ -67,15 +67,16 @@
   let cur = null;
   G.setScene = function (name) {
     cur = G.scenes[name];
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('scene-' + name);
+    if (name === 'halloween') document.body.classList.add('scene-starwars');   // os mesmos botões do Star Wars
     const motorDragao = name === 'dragao' || name === 'classico';   // os dois jogos do motor do Dragão
     document.getElementById('btnFire').textContent =
-      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'starwars' ? '🔫' : '⚡')))));
+      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡')))));
     // o Egito usa a buzina como ARCO, o Dragão e o Clássico como PASSE e as Cobras
     // como FESTA; nos outros jogos ela volta a ser buzina
     document.getElementById('btnHorn').textContent =
-      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'starwars' ? '✋' : '📯')))))));
+      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯')))))));
     // no jogo do Pikachu o botão da porta é a bola de campo de força
     document.getElementById('btnChama').textContent = '🙋';   // o Star Wars troca-o por 🔄 lá fora
     document.getElementById('btnDoor').textContent = name === 'ash' ? '🛡️' : (name === 'robos' ? '💥' : '🚪');
@@ -84,7 +85,7 @@
 
   G.goMenu = function () {
     cur = null;
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('splash-on');
     if (G.audio.engineSet) G.audio.engineSet(0);
     if (G.audio.cala) G.audio.cala();   // a voz (Legos, Marvel) não fica a falar no menu
@@ -324,6 +325,7 @@
   document.getElementById('btnPlayAsh').addEventListener('click', function () { startGame('ash'); });
   document.getElementById('btnPlayRobos').addEventListener('click', function () { startGame('robos'); });
   document.getElementById('btnPlayStarWars').addEventListener('click', function () { startGame('starwars'); });
+  document.getElementById('btnPlayHalloween').addEventListener('click', function () { startGame('halloween'); });
   document.getElementById('btnPlayLegos').addEventListener('click', function () { startGame('legos'); });
   document.getElementById('btnHome').addEventListener('click', function () { G.goMenu(); });
 

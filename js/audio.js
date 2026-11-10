@@ -101,6 +101,9 @@
       case 'quack': beep(520, 0.14, 'sawtooth', 0.12, -160); beep(500, 0.16, 'sawtooth', 0.12, -180, 0.2); break;
       case 'piui': beep(880, 0.35, 'triangle', 0.16, 60); beep(1175, 0.5, 'triangle', 0.14, 40, 0.3); puff(0.5, 0.1, 0.1); break;
       // Marvel: poderes dos heróis, o Lego a desmontar e a montar, e a porta da prisão
+      case 'susto': puff(0.5, 0.3); beep(180, 0.6, 'sawtooth', 0.22, 600); beep(260, 0.55, 'square', 0.12, 800, 0.02); break;
+      case 'uuu': beep(330, 0.7, 'sine', 0.12, -120); beep(340, 0.6, 'sine', 0.06, -100, 0.1); break;
+      case 'uivo': beep(400, 0.25, 'sine', 0.14, 300); beep(700, 0.9, 'sine', 0.14, -250, 0.25); break;
       case 'repulsor': beep(1300, 0.18, 'sine', 0.12, -700); beep(2200, 0.1, 'square', 0.05, -1200); break;
       case 'escudo': beep(900, 0.12, 'triangle', 0.14, 300); puff(0.15, 0.08); break;
       case 'trovao': puff(0.6, 0.24); beep(120, 0.5, 'sawtooth', 0.16, -60); beep(2400, 0.08, 'square', 0.08, -1800); break;
