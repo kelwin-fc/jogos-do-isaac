@@ -68,16 +68,16 @@
   G.setScene = function (name) {
     cur = G.scenes[name];
     G.audio.tema = null;   // o Star Wars e o Halloween põem o tema deles
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('scene-' + name);
     if (name === 'halloween') document.body.classList.add('scene-starwars');   // os mesmos botões do Star Wars
     const motorDragao = name === 'dragao' || name === 'classico' || name === 'paifilho';   // os dois jogos do motor do Dragão
     document.getElementById('btnFire').textContent =
-      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'rei' ? '🏹' : (name === 'ninjaslego' ? '🔥' : (name === 'dragaorobo' ? '🏹' : (name === 'robocarro' || name === 'mar' ? '🔫' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡')))))))));
+      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'rei' ? '🏹' : (name === 'ninjaslego' ? '🔥' : (name === 'dragaorobo' || name === 'casamarvel' ? '🏹' : (name === 'robocarro' || name === 'mar' ? '🔫' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡')))))))));
     // o Egito usa a buzina como ARCO, o Dragão e o Clássico como PASSE e as Cobras
     // como FESTA; nos outros jogos ela volta a ser buzina
     document.getElementById('btnHorn').textContent =
-      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'ninjaslego' ? '🌀' : (name === 'dragaorobo' ? '✨' : (name === 'robocarro' ? '💥' : (name === 'mar' ? '🐋' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯')))))))))));
+      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'ninjaslego' ? '🌀' : (name === 'dragaorobo' ? '✨' : (name === 'robocarro' ? '💥' : (name === 'mar' ? '🐋' : (name === 'casamarvel' ? '💥' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯'))))))))))));
     // no jogo do Pikachu o botão da porta é a bola de campo de força
     document.getElementById('btnChama').textContent = '🙋';   // o Star Wars troca-o por 🔄 lá fora
     document.getElementById('btnDoor').textContent = name === 'ash' ? '🛡️' : (name === 'robos' ? '💥' : '🚪');
@@ -87,7 +87,7 @@
   G.goMenu = function () {
     cur = null;
     G.audio.tema = null;
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('splash-on');
     if (G.audio.engineSet) G.audio.engineSet(0);
     if (G.audio.cala) G.audio.cala();   // a voz (Legos, Marvel) não fica a falar no menu
@@ -321,6 +321,7 @@
   document.getElementById('btnPlayDragao').addEventListener('click', function () { startGame('dragao'); });
   document.getElementById('btnPlayCobras').addEventListener('click', function () { startGame('cobras'); });
   document.getElementById('btnPlayPaiFilho').addEventListener('click', function () { startGame('paifilho'); });
+  document.getElementById('btnPlayCasaMarvel').addEventListener('click', function () { startGame('casamarvel'); });
   document.getElementById('btnPlayMar').addEventListener('click', function () { startGame('mar'); });
   document.getElementById('btnPlayRoboCarro').addEventListener('click', function () { startGame('robocarro'); });
   document.getElementById('btnPlayClassico').addEventListener('click', function () { startGame('classico'); });

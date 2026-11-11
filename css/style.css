@@ -172,6 +172,17 @@ body.scene-mar #btnFire,
 body.scene-mar #btnHorn { display: block; }
 body.scene-mar #btnHorn { background: rgba(76, 201, 240, 0.55); }
 body.scene-mar.mar-orca-espera #btnHorn { opacity: 0.4; }
+/* CASA ASSOMBRADA (Gavião Arqueiro): ◀ ▶ ⬆, as setas 🏹 (btnFire) e a seta especial 💥 (btnHorn) */
+body.scene-casamarvel #btnLeft,
+body.scene-casamarvel #btnRight,
+body.scene-casamarvel #btnJump,
+body.scene-casamarvel #btnFire { display: block; }
+body.scene-casamarvel #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(155, 93, 229, 0.6);
+}
+body.scene-casamarvel.casa-especial-espera #btnHorn { opacity: 0.4; }
 /* O REI: ◀ ▶ ⬆, as setas 🏹 (btnFire) e a corneta 📯 (btnHorn, por cima do ◀) */
 body.scene-rei #btnLeft,
 body.scene-rei #btnRight,
