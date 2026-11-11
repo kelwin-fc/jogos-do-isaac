@@ -164,6 +164,18 @@ body.scene-rei #btnHorn {
   background: rgba(255, 209, 102, 0.6);
 }
 body.scene-rei.rei-corneta-espera #btnHorn { opacity: 0.4; }
+/* NINJAS DE LEGO: ◀ ▶ ⬆ (salto duplo), bolas de fogo 🔥 (btnFire) e o poder gigante 🌀
+   (btnHorn, por cima do ◀, apagadinho enquanto enche) */
+body.scene-ninjaslego #btnLeft,
+body.scene-ninjaslego #btnRight,
+body.scene-ninjaslego #btnJump,
+body.scene-ninjaslego #btnFire { display: block; }
+body.scene-ninjaslego #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(255, 123, 0, 0.55);
+}
+body.scene-ninjaslego.nl-super-espera #btnHorn { opacity: 0.4; }
 /* STAR WARS: ◀ ▶ ⬆, as pistolas do amigo 🔫 (btnFire), a Força do bebé ✋ (btnHorn, por
    cima do ◀, apagadinha enquanto recarrega) e o 🚪 só quando estamos dentro do boi de Lego */
 body.scene-starwars #btnLeft,
