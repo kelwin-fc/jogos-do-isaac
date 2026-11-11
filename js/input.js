@@ -16,13 +16,16 @@
     v: 'chama', V: 'chama', f: 'campo', F: 'campo'
   };
 
+  // A seta ↑ do teclado (e o W) também é o botão ⬆ de saltar: em todos os jogos com
+  // salto, a seta para cima salta (pedido do Kelwin, 2026-11-11). Nos jogos sem salto
+  // ninguém olha para 'jump', por isso lá continua a ser só "para cima".
   window.addEventListener('keydown', function (e) {
     const n = KEYS[e.key];
-    if (n) { press(n); e.preventDefault(); }
+    if (n) { press(n); if (n === 'up') press('jump'); e.preventDefault(); }
   });
   window.addEventListener('keyup', function (e) {
     const n = KEYS[e.key];
-    if (n) release(n);
+    if (n) { release(n); if (n === 'up') release('jump'); }
   });
 
   // Botões táteis (pointer events funcionam para rato e dedo).

@@ -67,17 +67,17 @@
   let cur = null;
   G.setScene = function (name) {
     cur = G.scenes[name];
-    G.audio.tema = null;   // o Star Wars e o Halloween põem o tema deles
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    G.audio.tema = name;   // cada jogo tem a sua música (o Star Wars e o Halloween põem a deles no enter)
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('scene-' + name);
     if (name === 'halloween') document.body.classList.add('scene-starwars');   // os mesmos botões do Star Wars
     const motorDragao = name === 'dragao' || name === 'classico' || name === 'paifilho';   // os dois jogos do motor do Dragão
     document.getElementById('btnFire').textContent =
-      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'rei' ? '🏹' : (name === 'ninjaslego' ? '🔥' : (name === 'dragaorobo' || name === 'casamarvel' ? '🏹' : (name === 'robocarro' || name === 'mar' ? '🔫' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡')))))))));
+      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'rei' ? '🏹' : (name === 'ninjaslego' ? '🔥' : (name === 'dragaorobo' || name === 'casamarvel' ? '🏹' : (name === 'chita' ? '💨' : (name === 'robocarro' || name === 'mar' ? '🔫' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡'))))))))));
     // o Egito usa a buzina como ARCO, o Dragão e o Clássico como PASSE e as Cobras
     // como FESTA; nos outros jogos ela volta a ser buzina
     document.getElementById('btnHorn').textContent =
-      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'ninjaslego' ? '🌀' : (name === 'dragaorobo' ? '✨' : (name === 'robocarro' ? '💥' : (name === 'mar' ? '🐋' : (name === 'casamarvel' ? '💥' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯'))))))))))));
+      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'ninjaslego' ? '🌀' : (name === 'dragaorobo' ? '✨' : (name === 'robocarro' ? '💥' : (name === 'mar' ? '🐋' : (name === 'casamarvel' ? '💥' : (name === 'chita' ? '🐾' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯')))))))))))));
     // no jogo do Pikachu o botão da porta é a bola de campo de força
     document.getElementById('btnChama').textContent = '🙋';   // o Star Wars troca-o por 🔄 lá fora
     document.getElementById('btnDoor').textContent = name === 'ash' ? '🛡️' : (name === 'robos' ? '💥' : '🚪');
@@ -87,7 +87,7 @@
   G.goMenu = function () {
     cur = null;
     G.audio.tema = null;
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('splash-on');
     if (G.audio.engineSet) G.audio.engineSet(0);
     if (G.audio.cala) G.audio.cala();   // a voz (Legos, Marvel) não fica a falar no menu
@@ -321,6 +321,7 @@
   document.getElementById('btnPlayDragao').addEventListener('click', function () { startGame('dragao'); });
   document.getElementById('btnPlayCobras').addEventListener('click', function () { startGame('cobras'); });
   document.getElementById('btnPlayPaiFilho').addEventListener('click', function () { startGame('paifilho'); });
+  document.getElementById('btnPlayChita').addEventListener('click', function () { startGame('chita'); });
   document.getElementById('btnPlayCasaMarvel').addEventListener('click', function () { startGame('casamarvel'); });
   document.getElementById('btnPlayMar').addEventListener('click', function () { startGame('mar'); });
   document.getElementById('btnPlayRoboCarro').addEventListener('click', function () { startGame('robocarro'); });
@@ -337,6 +338,66 @@
   document.getElementById('btnPlayDragaoRobo').addEventListener('click', function () { startGame('dragaorobo'); });
   document.getElementById('btnPlayLegos').addEventListener('click', function () { startGame('legos'); });
   document.getElementById('btnHome').addEventListener('click', function () { G.goMenu(); });
+
+  /* ---------- a capa por categorias (pedido do Kelwin, 2026-11-11) ----------
+     Com tantos jogos, a capa mostra primeiro um CARTÃO por categoria; ao tocar num
+     cartão aparecem só os jogos dessa categoria e um botão ⬅️ para voltar. Os botões
+     dos jogos continuam no index.html (cada um com o seu id); aqui só se escolhe quais
+     se veem. Um jogo novo tem de entrar numa das listas (senão vai para "Mais jogos"). */
+  const CATEGORIAS = [
+    { id: 'herois', nome: 'HERÓIS', ic: '🦸', cor: 'linear-gradient(#ff5a5f, #8d0a14)',
+      jogos: ['btnPlayMarvel', 'btnPlayCasaMarvel', 'btnPlayMauzoes', 'btnPlayRobos', 'btnPlayNinjasLego', 'btnPlayNinja'] },
+    { id: 'aventuras', nome: 'AVENTURAS', ic: '🚀', cor: 'linear-gradient(#7b7ff2, #2b2d7a)',
+      jogos: ['btnPlayStarWars', 'btnPlayHalloween', 'btnPlayRei', 'btnPlayDragaoRobo', 'btnPlayRoboCarro', 'btnPlayEgito', 'btnPlayFly', 'btnPlayCastle'] },
+    { id: 'animais', nome: 'ANIMAIS', ic: '🐆', cor: 'linear-gradient(#9ae66e, #1f7a3a)',
+      jogos: ['btnPlayChita', 'btnPlayMar', 'btnPlayCobras', 'btnPlayMorcegos', 'btnPlayViuvas', 'btnPlayPokemon', 'btnPlayAsh'] },
+    { id: 'desporto', nome: 'FUTEBOL E CARROS', ic: '⚽', cor: 'linear-gradient(#5b9bff, #0b3ea8)',
+      jogos: ['btnPlayPaiFilho', 'btnPlayClassico', 'btnPlayDragao', 'btnPlayFutebol', 'btnPlayCarros', 'btnPlayPista'] },
+    { id: 'brincar', nome: 'BRINCAR', ic: '🧸', cor: 'linear-gradient(#ff7fbf, #c2185b)',
+      jogos: ['btnPlayLegos', 'btnPlayBarbie', 'btnPlayDamas'] }
+  ];
+  (function () {
+    const jogosEl = menuEl.querySelector('.jogos');
+    const todos = Array.prototype.slice.call(jogosEl.querySelectorAll('.play'));
+    const usados = {};
+    CATEGORIAS.forEach(function (cat) { cat.jogos.forEach(function (id) { usados[id] = true; }); });
+    const sobra = todos.filter(function (b) { return !usados[b.id]; }).map(function (b) { return b.id; });
+    if (sobra.length) CATEGORIAS.push({ id: 'mais', nome: 'MAIS JOGOS', ic: '🎮', cor: 'linear-gradient(#ffc94d, #ff9f1c)', jogos: sobra });
+
+    const catsEl = document.createElement('div');
+    catsEl.className = 'categorias';
+    jogosEl.parentNode.insertBefore(catsEl, jogosEl);
+    const voltar = document.createElement('button');
+    voltar.className = 'play voltar';
+    jogosEl.insertBefore(voltar, jogosEl.firstChild);
+
+    function abre(cat) {
+      document.body.classList.toggle('menu-cat', !!cat);
+      todos.forEach(function (b) { b.hidden = !!cat && cat.jogos.indexOf(b.id) < 0; });
+      if (cat) {
+        // os jogos aparecem pela ordem da categoria (os mais novos primeiro)
+        cat.jogos.forEach(function (id) { const b = document.getElementById(id); if (b) jogosEl.appendChild(b); });
+        voltar.innerHTML = '<span class="ic">⬅️</span><span class="nm">' + cat.ic + ' ' + cat.nome + '</span>';
+      }
+      splashEl.scrollTop = 0;
+      G.fitSplash();
+    }
+    CATEGORIAS.forEach(function (cat, i) {
+      const b = document.createElement('button');
+      b.className = 'play cat';
+      b.style.background = cat.cor;
+      b.style.setProperty('--i', i);
+      const mini = cat.jogos.slice(0, 4).map(function (id) {
+        const j = document.getElementById(id), ic = j && j.querySelector('.ic');
+        return ic ? ic.innerHTML : '';
+      }).join('');
+      b.innerHTML = '<span class="ic">' + cat.ic + '</span><span class="nm">' + cat.nome + '</span><span class="mini">' + mini + '</span>';
+      b.addEventListener('click', function () { if (G.audio.init) G.audio.init(); if (G.audio.sfx) G.audio.sfx('pop'); abre(cat); });
+      catsEl.appendChild(b);
+    });
+    voltar.addEventListener('click', function () { if (G.audio.sfx) G.audio.sfx('pop'); abre(null); });
+    abre(null);
+  })();
 
   document.getElementById('btnEstilo').addEventListener('click', function () {
     G.menuEstilo = G.menuEstilo === 'mosaico' ? 'lista' : 'mosaico';

@@ -168,6 +168,11 @@ body.scene-robocarro #btnHorn {
 body.scene-robocarro.robocarro-especial-espera #btnHorn { opacity: 0.4; }
 /* O MAR: nada-se arrastando o dedo no ecrã (ou com as setas do teclado); a pistola de
    bolhas 🔫 (btnFire) e a orca 🐋 (btnHorn, em baixo à esquerda), apagadinha a encher */
+/* A CHITA: anda-se a arrastar o dedo (sem setas no ecrã); 💨 corre (btnFire) e 🐾 salta (btnHorn) */
+body.scene-chita #btnFire,
+body.scene-chita #btnHorn { display: block; }
+body.scene-chita #btnHorn { background: rgba(255, 183, 3, 0.6); }
+body.scene-chita.chita-salto-espera #btnHorn { opacity: 0.4; }
 body.scene-mar #btnFire,
 body.scene-mar #btnHorn { display: block; }
 body.scene-mar #btnHorn { background: rgba(76, 201, 240, 0.55); }
@@ -610,6 +615,8 @@ body.splash-on #splash { display: flex; }
 }
 /* Marvel: vermelho e dourado do Homem de Ferro */
 #btnPlayMarvel { background: linear-gradient(#ff5a5f, #b0101c); animation-delay: 4.25s; }
+/* a chita: dourada com pintas pretas */
+#btnPlayChita { background: radial-gradient(circle at 18% 30%, #3b2a12 0 5%, transparent 6%), radial-gradient(circle at 78% 68%, #3b2a12 0 5%, transparent 6%), radial-gradient(circle at 60% 22%, #3b2a12 0 4%, transparent 5%), linear-gradient(#ffd166, #e09f3e); }
 /* Nicole: tijolos de Lego às cores */
 #btnPlayLegos {
   background: linear-gradient(#ffd23f 0 25%, #3bb273 25% 50%, #1e6fd9 50% 75%, #e3242b 75%);
@@ -633,6 +640,41 @@ body.splash-on #splash { display: flex; }
   border-radius: 50%; background: #fff; border: 0.06em solid #222;
 }
 .play:active { transform: scale(0.94); }
+
+/* ---------- capa por categorias: primeiro os cartões, depois os jogos de uma ---------- */
+#splash .categorias {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: min(2.2vh, 22px);
+}
+body.menu-cat #splash .categorias { display: none !important; }
+body:not(.menu-cat) #splash .jogos { display: none !important; }
+.play[hidden] { display: none !important; }
+.play.cat { animation-delay: calc(var(--i, 0) * 0.3s); }
+.play.cat .mini { font-size: 0.55em; letter-spacing: 0.08em; opacity: 0.95; }
+.play.voltar { background: linear-gradient(#ffffff, #dfe7f1); color: #1d3557; animation: none; }
+body.menu-mosaico #splash .categorias {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  --gap: min(2.4vh, 22px);
+  gap: var(--gap);
+  --cols: 2;
+  width: min(94vw, 520px);
+}
+body.menu-mosaico.menu-cat #splash .categorias { display: none; }
+body.menu-mosaico .play.cat {
+  flex: 0 0 calc((100% - var(--gap) * (var(--cols) - 1)) / var(--cols));
+  padding: min(2.6vh, 22px) 8px;
+  font-size: min(5vw, 3.2vh, 30px);
+}
+body.menu-mosaico .play.cat .ic { font-size: 2.2em; }
+body.menu-mosaico .play.voltar { flex-basis: 100%; flex-direction: row; font-size: min(4.6vw, 3vh, 26px); }
+@media (min-aspect-ratio: 5/4) {
+  body.menu-mosaico #splash .categorias { --cols: 3; width: min(96vw, 900px); }
+  body.menu-mosaico .play.cat { font-size: min(2.8vw, 4.6vh, 30px); }
+}
 
 /* ---------- menu em mosaico (estilo novo, a testar com o botão 🎛️) ---------- */
 body.menu-mosaico #splash { background: rgba(10, 20, 45, 0.28); }

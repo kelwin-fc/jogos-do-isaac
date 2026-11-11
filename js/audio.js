@@ -168,22 +168,76 @@
       'A3 . C4 . E4 . F4 . E4 . . . D#4 . E4 . ' +
       'A3 . . . . . . . E3 . . . A3 . . .') }
   };
+  // Cada jogo tem a SUA música (pedido de 2026-11-11: "em todos os jogos a música não pode
+  // ser igual; a da capa fica a de sempre"). Para os jogos sem tema escrito à mão, a música
+  // é composta a partir do nome do jogo: o nome escolhe a escala, a tónica, o instrumento,
+  // o ritmo e o baixo, e uma melodia que repete o motivo (como as canções a sério). O mesmo
+  // jogo toca sempre a mesma música; jogos diferentes tocam músicas diferentes.
+  const MODOS = [
+    { n: 'maior', esc: [0, 2, 4, 5, 7, 9, 11], baixo: [0, 5, 0, 7] },
+    { n: 'menor', esc: [0, 2, 3, 5, 7, 8, 10], baixo: [0, 8, 5, 7] },
+    { n: 'penta', esc: [0, 2, 4, 7, 9], baixo: [0, 7, 9, 7] },
+    { n: 'dorico', esc: [0, 2, 3, 5, 7, 9, 10], baixo: [0, 5, 3, 7] },
+    { n: 'mixo', esc: [0, 2, 4, 5, 7, 9, 10], baixo: [0, 10, 5, 0] },
+    { n: 'pentamenor', esc: [0, 3, 5, 7, 10], baixo: [0, 5, 3, 7] }
+  ];
+  const RITMOS = [   // 16 colcheias por compasso: 1 = nota nova
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0],
+    [1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+    [1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+    [1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0]
+  ];
+  const SONS = [['triangle', 0.075], ['square', 0.035], ['sine', 0.09], ['sawtooth', 0.035], ['triangle', 0.07]];
+  function compoe(nome) {
+    let h = 2166136261;
+    for (let i = 0; i < nome.length; i++) { h ^= nome.charCodeAt(i); h = Math.imul(h, 16777619); }
+    let seed = (h >>> 0) || 1;
+    function r() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }
+    function esc(a) { return a[Math.floor(r() * a.length)]; }
+    const modo = esc(MODOS), raiz = 57 + Math.floor(r() * 10);          // tónica entre A3 e F#4 (MIDI)
+    const som = esc(SONS), rA = esc(RITMOS), rB = esc(RITMOS);
+    const midi = function (grau) {
+      const n = modo.esc.length, o = Math.floor(grau / n), g = ((grau % n) + n) % n;
+      return raiz + 12 * o + modo.esc[g];
+    };
+    const hz = function (m) { return 440 * Math.pow(2, (m - 69) / 12); };
+    // o motivo (compasso A) e a resposta (compasso B); a canção é A B A' fim
+    function frase(ritmo, inicio, fim) {
+      const out = []; let grau = inicio;
+      for (let i = 0; i < 16; i++) {
+        if (!ritmo[i]) { out.push(null); continue; }
+        if (i >= 12 && fim !== undefined) grau = fim;
+        else grau = Math.max(-2, Math.min(9, grau + esc([-2, -1, -1, 1, 1, 2, 0, 3, -3])));
+        out.push(hz(midi(grau)));
+      }
+      return out;
+    }
+    const A1 = frase(rA, Math.floor(r() * 3) + 2), B = frase(rB, 4), A2 = A1.slice(0, 12).concat(frase(rA, 3, 0).slice(12));
+    const fimF = frase(rB, 2, 0);
+    return { som: som[0], vol: som[1], mel: A1.concat(B, A2, fimF),
+      baixo: modo.baixo.map(function (st) { return hz(raiz - 24 + st); }),
+      bateria: r() < 0.6, oitava: r() < 0.5 };
+  }
+  A.compoe = compoe;   // (para testar)
   A.tema = null;
   A.startMusic = function () {
     if (A.musicTimer) return;
     A.musicTimer = setInterval(function () {
       if (!A.on || !A.ctx || (window.G && G.paused)) return;
       const step = A.musicStep++;
-      const tm = TEMAS[A.tema];
+      let tm = TEMAS[A.tema];
+      if (!tm && A.tema) tm = TEMAS[A.tema] = compoe(A.tema);
       if (tm) {
         const n = tm.mel.length, i = step % n, f = tm.mel[i];
         if (f) {
           let d = 1; while (d < 8 && !tm.mel[(i + d) % n]) d++;
           beep(f, d * 0.15 * 0.95, tm.som, tm.vol);
-          beep(f * 2, d * 0.15 * 0.6, 'sine', tm.vol * 0.35);
+          if (tm.oitava !== false) beep(f * 2, d * 0.15 * 0.6, 'sine', tm.vol * 0.35);
         }
         if (i % 8 === 0) beep(tm.baixo[Math.floor(i / 16) % 4] , 1.1, 'sine', 0.09);
-        if (i % 4 === 0) puff(0.07, A.tema === 'espaco' ? 0.07 : 0.05);
+        if (i % 4 === 0 && tm.bateria !== false) puff(0.07, A.tema === 'espaco' ? 0.07 : 0.05);
         return;
       }
       if (step % 2) return;
