@@ -25,13 +25,13 @@
   const S = {};
 
   const GRAV = 2200, SALTO = 920, VEL_REI = 330;
-  const SETA_V = 980, MAXC = 5, MAX_EQUIPA = 14;
+  const SETA_V = 980, MAXC = 5, MAX_EQUIPA = 8;
   const TERRAS = [
-    { id: 'aldeia', nome: 'A aldeia dos moinhos', fala: 'A aldeia dos moinhos! Ao ataque!', ceu: ['#8ecae6', '#dff3ff'], monte: '#95d5b2', perto: '#52b788', chao: '#74c69d', caminho: '#d4a373', grupos: 5, muralha: 3 },
-    { id: 'floresta', nome: 'A floresta verde', fala: 'A floresta verde! Cuidado com os arqueiros!', ceu: ['#90e0ef', '#e9f5db'], monte: '#6a994e', perto: '#386641', chao: '#57a773', caminho: '#bc8a5f', grupos: 6, muralha: 3 },
-    { id: 'rio', nome: 'O rio da ponte', fala: 'O rio da ponte! Os cavaleiros vêm aí!', ceu: ['#a2d2ff', '#e0fbfc'], monte: '#a3b18a', perto: '#588157', chao: '#80b918', caminho: '#c9a36b', grupos: 7, muralha: 4 },
-    { id: 'montanha', nome: 'As montanhas de neve', fala: 'As montanhas de neve! Está quase!', ceu: ['#bde0fe', '#f1faee'], monte: '#adb5bd', perto: '#6c757d', chao: '#8fbc8f', caminho: '#b08968', grupos: 8, muralha: 4 },
-    { id: 'capital', nome: 'O castelo do Rei Vermelho', fala: 'O castelo do Rei Vermelho! Vamos ganhar o reino!', ceu: ['#ffb4a2', '#ffe5d9'], monte: '#b5838d', perto: '#6d6875', chao: '#7cb518', caminho: '#c08552', grupos: 9, muralha: 5, rei: true }
+    { id: 'aldeia', nome: 'A aldeia dos moinhos', fala: 'A aldeia dos moinhos! Ao ataque!', ceu: ['#8ecae6', '#dff3ff'], monte: '#95d5b2', perto: '#52b788', chao: '#74c69d', caminho: '#d4a373', grupos: 8, muralha: 4 },
+    { id: 'floresta', nome: 'A floresta verde', fala: 'A floresta verde! Cuidado com os arqueiros!', ceu: ['#90e0ef', '#e9f5db'], monte: '#6a994e', perto: '#386641', chao: '#57a773', caminho: '#bc8a5f', grupos: 9, muralha: 4 },
+    { id: 'rio', nome: 'O rio da ponte', fala: 'O rio da ponte! Os cavaleiros vêm aí!', ceu: ['#a2d2ff', '#e0fbfc'], monte: '#a3b18a', perto: '#588157', chao: '#80b918', caminho: '#c9a36b', grupos: 10, muralha: 5 },
+    { id: 'montanha', nome: 'As montanhas de neve', fala: 'As montanhas de neve! Está quase!', ceu: ['#bde0fe', '#f1faee'], monte: '#adb5bd', perto: '#6c757d', chao: '#8fbc8f', caminho: '#b08968', grupos: 11, muralha: 5 },
+    { id: 'capital', nome: 'O castelo do Rei Vermelho', fala: 'O castelo do Rei Vermelho! Vamos ganhar o reino!', ceu: ['#ffb4a2', '#ffe5d9'], monte: '#b5838d', perto: '#6d6875', chao: '#7cb518', caminho: '#c08552', grupos: 12, muralha: 6, rei: true }
   ];
   const AZUL = { tunica: '#1e6fd9', escuro: '#164e9c', capa: '#1e6fd9' };
   const VERM = { tunica: '#d62828', escuro: '#9d0208', capa: '#d62828' };
@@ -73,20 +73,20 @@
     const de = 1000, ate = castelo.x - 820, passo = (ate - de) / n;
     for (let g = 0; g < n; g++) {
       const gx = de + g * passo + rnd(0, passo * 0.4);
-      const quantos = 1 + Math.floor(rnd(0, 2.2 + i * 0.3));
+      const quantos = 2 + Math.floor(rnd(0, 1.6 + i * 0.4));
       for (let k = 0; k < quantos; k++) ents.push(soldado('arqueiro', gx + k * 70, 'mau'));
-      if (i >= 1 && Math.random() < 0.3 + i * 0.12) ents.push(soldado('cavaleiro', gx + 220, 'mau'));
+      if (Math.random() < 0.35 + i * 0.13) ents.push(soldado('cavaleiro', gx + 220, 'mau'));
     }
     // os arqueiros em cima das muralhas do castelo
     const m = T().muralha, larg = 440;
     for (let k = 0; k < m; k++) {
       const e = soldado('arqueiro', castelo.x - larg / 2 + (k + 0.5) * (larg / m), 'mau');
-      e.muralha = true; e.y = -230;
+      e.muralha = true; e.y = -230; e.hp = e.max = e.max + 1;
       ents.push(e);
     }
     if (T().rei) {
       const r = soldado('reimau', castelo.x, 'mau');
-      r.muralha = true; r.y = -350; r.hp = r.max = 12 + (ronda - 1) * 4;
+      r.muralha = true; r.y = -350; r.hp = r.max = 20 + (ronda - 1) * 5;
       ents.push(r);
     }
     // a nossa equipa vem connosco de terra em terra
@@ -100,7 +100,7 @@
   }
 
   function soldado(tipo, x, equipa) {
-    const hp = tipo === 'cavaleiro' ? 3 : 2;
+    const hp = tipo === 'cavaleiro' ? 5 : 3;
     return { tipo: tipo, x: x, y: 0, vx: 0, dir: -1, equipa: equipa, hp: hp + Math.floor((ronda - 1) / 2), max: hp + Math.floor((ronda - 1) / 2),
       cd: rnd(1.2, 3), pisca: 0, passo: rnd(0, 6), arco: 0, viraT: 0, festa: 0 };
   }
@@ -147,7 +147,7 @@
     sfx('arco');
   }
   function corneta() {
-    cornetaCd = 6;
+    cornetaCd = 10;
     sfx('horn');
     const eq = equipa();
     const vs = vermelhos();
@@ -275,19 +275,19 @@
           e.x = Math.min(e.x, castelo.x - 300);
         }
         // dispara quando o rei está perto (e a descansar ninguém lhe dispara)
-        const alcance = e.muralha ? 900 : 760;
+        const alcance = e.muralha ? 980 : 860;
         if (longe < alcance && rei.descansa <= 0 && Math.abs(e.x - camX - vw() / 2) < vw() * 0.75) {
           e.cd -= dt;
           if (e.cd <= 0) {
             const forte = 1 + (ronda - 1) * 0.15;
-            const v = (560 + terra * 25 + (ronda - 1) * 40);
-            disparaSeta(b.x, b.y - 20, { x: rei.x, y: rei.y - 90 }, v, false, 0.07);
+            const v = (640 + terra * 30 + (ronda - 1) * 40);
+            disparaSeta(b.x, b.y - 20, { x: rei.x + rei.dir * rnd(0, 60), y: rei.y - 90 }, v, false, 0.05);
             if (e.tipo === 'reimau') {
               disparaSeta(b.x, b.y - 20, { x: rei.x - 90, y: rei.y - 90 }, v, false, 0.07);
               disparaSeta(b.x, b.y - 20, { x: rei.x + 90, y: rei.y - 90 }, v, false, 0.07);
             }
             e.arco = 0.2;
-            e.cd = (e.tipo === 'reimau' ? rnd(1.6, 2.2) : rnd(2.2, 3.6)) / forte;
+            e.cd = (e.tipo === 'reimau' ? rnd(1.1, 1.6) : rnd(1.5, 2.6)) / forte;
           }
         }
       } else {
@@ -313,7 +313,7 @@
             e.dir = alvo.x > b.x ? 1 : -1;
             disparaSeta(b.x, b.y - 20, alvo, 860, true, 0.06);
             e.arco = 0.2;
-            e.cd = rnd(1.6, 2.8);
+            e.cd = rnd(2.4, 3.6);
           } else e.cd = 0.4;
         }
       }
@@ -577,8 +577,53 @@
       c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(-30, -48, 58, 4);
     }
   }
-  // uma pessoa (de pé ou sentada no cavalo), com arco na mão; cores da equipa
+  // 2.ª ronda (2026-11-11): "que fossem mais como os dos Vingadores, mais como os humanos":
+  // as pessoas usam o mesmo boneco do jogo da Marvel, com pele, mãos e cara de gente
+  const PELE = '#f2c6a0', defs = {};
+  function defDe(cores, capa) {
+    const chave = cores.tunica + (capa ? 'c' : '');
+    if (!defs[chave]) defs[chave] = { id: 'rei-' + chave, tronco: cores.tunica, bracos: cores.tunica, maos: PELE, pele: PELE,
+      pernas: '#5c4033', ancas: cores.escuro, pes: '#3d2c1e', capa: capa ? cores.escuro : undefined };
+    return defs[chave];
+  }
   function pessoa(c, cores, opts) {
+    const B = G.scenes.marvel && G.scenes.marvel.api && G.scenes.marvel.api.boneco;
+    if (B) return pessoaMarvel(c, cores, opts, B);
+    pessoaSimples(c, cores, opts);
+  }
+  function pessoaMarvel(c, cores, opts, B) {
+    const K = 1.32;
+    c.save(); c.scale(K, K);
+    const braco = opts.festa ? 0 : (opts.arco > 0 ? 1 : 0.88);
+    B(c, defDe(cores, opts.capa), { t: opts.t, dir: 1, fase: opts.passo || 0, anda: !!opts.anda, braco: braco, cima: !!opts.festa,
+      partes: opts.sentado ? { pernas: { dx: 2, dy: -2, r: -1.25 } } : null });
+    // cabelo / capacete / coroa por cima da cabeça
+    if (opts.coroa) {
+      c.fillStyle = '#6b4226'; G.gfx.rr(c, -8.5, -70, 17, 6, 3); c.fill();
+      coroa(c, 0, -74, 9);
+      c.fillStyle = '#e63946'; c.beginPath(); c.arc(0, -75, 1.8, 0, TAU); c.fill();
+    } else if (opts.capacete) {
+      c.fillStyle = '#adb5bd'; c.beginPath(); c.arc(0, -63, 10, Math.PI, 0); c.fill();
+      c.fillRect(-10, -64, 20, 3); c.fillStyle = '#868e96'; c.fillRect(-1.2, -73, 2.4, 10);
+      c.fillStyle = cores.tunica; c.beginPath(); c.moveTo(0, -73); c.quadraticCurveTo(-8, -80, -12, -74); c.quadraticCurveTo(-6, -76, 0, -71); c.fill();
+    }
+    // o arco na mão da frente (a mão fica à frente, à altura do peito)
+    if (!opts.festa) {
+      const ang = -0.2 - 1.35 * braco, hx = 9.2 - Math.sin(ang) * 18.5, hy = -47 + Math.cos(ang) * 18.5;
+      const puxa = opts.arco > 0 ? 7 : 0;
+      c.strokeStyle = '#8d5524'; c.lineWidth = 2.6;
+      c.beginPath(); c.arc(hx - 4, hy, 17, -1.2, 1.2); c.stroke();
+      c.strokeStyle = '#f1f3f5'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(hx - 4 + Math.cos(-1.2) * 17, hy + Math.sin(-1.2) * 17); c.lineTo(hx - 2 - puxa, hy); c.lineTo(hx - 4 + Math.cos(1.2) * 17, hy + Math.sin(1.2) * 17); c.stroke();
+      // a aljava com setas às costas
+      c.fillStyle = '#8d5524'; G.gfx.rr(c, -14, -52, 6, 20, 2); c.fill();
+      c.fillStyle = cores.tunica === AZUL.tunica ? '#4cc9f0' : '#e63946';
+      c.fillRect(-14, -56, 2, 5); c.fillRect(-10, -57, 2, 6);
+    }
+    c.restore();
+  }
+  // uma pessoa (de pé ou sentada no cavalo), com arco na mão; cores da equipa
+  function pessoaSimples(c, cores, opts) {
     const sentado = opts.sentado, p = sentado ? 0 : Math.sin(opts.passo || 0) * 8;
     if (!sentado) {
       c.strokeStyle = '#495057'; c.lineWidth = 8; c.lineCap = 'round';
@@ -645,7 +690,7 @@
       c.scale(1.3, 1.3);
       pessoa(c, e.equipa === 'nosso' ? AZUL : VERM, { coroa: true, capa: true, t: t, arco: e.arco, passo: 0, festa: e.festa > 0 || e.equipa === 'nosso' });
     } else {
-      pessoa(c, cores, { capacete: true, t: t, arco: e.arco, passo: e.passo, festa: e.festa > 0 });
+      pessoa(c, cores, { capacete: true, t: t, arco: e.arco, passo: e.passo, anda: Math.abs(e.vx) > 20, festa: e.festa > 0 });
     }
     c.restore();
     // a energia que falta (só nos vermelhos)
@@ -720,7 +765,7 @@
     c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(0, 0, 20, 0, TAU); c.fill();
     const pronta = cornetaCd <= 0;
     c.strokeStyle = pronta ? '#9ef01a' : '#ffffff'; c.lineWidth = 5;
-    c.beginPath(); c.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - cornetaCd / 6)); c.stroke();
+    c.beginPath(); c.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - cornetaCd / 10)); c.stroke();
     c.font = (pronta ? 22 + Math.sin(t * 6) * 2 : 20) + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
     c.fillText('📯', 0, 1);
     c.restore();
