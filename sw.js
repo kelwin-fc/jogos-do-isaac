@@ -17,6 +17,7 @@ const JOGO = [
   'js/starwars.js',
   'js/rei.js',
   'js/ninjaslego.js',
+  'js/dragaorobo.js',
   'js/barbie.js',
   'js/carros.js',
   'js/castle.js',
