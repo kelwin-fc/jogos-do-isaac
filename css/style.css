@@ -166,6 +166,12 @@ body.scene-robocarro #btnHorn {
   background: rgba(255, 140, 66, 0.6);
 }
 body.scene-robocarro.robocarro-especial-espera #btnHorn { opacity: 0.4; }
+/* O MAR: nada-se arrastando o dedo no ecrã (ou com as setas do teclado); a pistola de
+   bolhas 🔫 (btnFire) e a orca 🐋 (btnHorn, em baixo à esquerda), apagadinha a encher */
+body.scene-mar #btnFire,
+body.scene-mar #btnHorn { display: block; }
+body.scene-mar #btnHorn { background: rgba(76, 201, 240, 0.55); }
+body.scene-mar.mar-orca-espera #btnHorn { opacity: 0.4; }
 /* O REI: ◀ ▶ ⬆, as setas 🏹 (btnFire) e a corneta 📯 (btnHorn, por cima do ◀) */
 body.scene-rei #btnLeft,
 body.scene-rei #btnRight,
