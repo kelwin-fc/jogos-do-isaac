@@ -171,7 +171,7 @@
       for (const eq of [NOSSA, DELES]) for (const f of FORMACAO) jogadores.push(novoJogador(eq, f));
       arbitro = { x: c.cx, y: c.cy + c.h * 0.2, passo: 0 };
       bola = { x: c.cx, y: c.cy, vx: 0, vy: 0, rot: 0, dono: null, livre: 0, voo: 0 };
-      meu = jogadores.find(function (p) { return p.eq === NOSSA && p.num === 8; });
+      meu = jogadores.find(function (p) { return p.eq === NOSSA && p.num === (cfg.primeiro || 8); });
       pontapeSaida(NOSSA);
       G.audio.sfx('multidao');
       G.banner(cfg.txt.entrada, 3200);
@@ -284,7 +284,12 @@
       const cols = EQ[eq].confetes;
       for (let i = 0; i < 5; i++) confetes(rnd(0, G.W), rnd(0, G.H * 0.5), 18, cols);
       for (const p of jogadores) if (p.eq === eq) p.festeja = 3;
-      if (eq === NOSSA) { G.addStars(3); G.banner(cfg.txt.goloNosso, 2800); }
+      const quem = cfg.nomes && eq === NOSSA && ultimoDono && ultimoDono.eq === NOSSA ? cfg.nomes[ultimoDono.num] : null;
+      if (quem) {                      // golo do Isaac ou do pai: diz-se quem foi
+        G.addStars(4);
+        G.banner('GOLO DO ' + quem.nome + '! ⚽❤️', 2800);
+        if (G.audio.fala) G.audio.fala(quem.nome === 'PAI' ? 'Golo do pai!' : 'Golo do Isaac!');
+      } else if (eq === NOSSA) { G.addStars(3); G.banner(cfg.txt.goloNosso, 2800); }
       else G.banner(cfg.txt.goloDeles, 2400);
     }
 
@@ -342,12 +347,14 @@
       /* ---- quem é o nosso jogador ---- */
       trocaT -= dt;
       if (fase === 'jogo' || fase === 'saida') {
-        if (bola.dono && bola.dono.eq === NOSSA && !bola.dono.gk) meu = bola.dono;
+        // no jogo do pai e do Isaac só se conduz o Isaac ou o pai (os que têm nome)
+        if (bola.dono && bola.dono.eq === NOSSA && !bola.dono.gk && (!cfg.nomes || cfg.nomes[bola.dono.num])) meu = bola.dono;
         else if (trocaT <= 0) {
           trocaT = 0.3;
           let melhor = meu, melhorD = 1e9;
           for (const p of jogadores) {
             if (p.eq !== NOSSA || p.gk || p.cai > 0) continue;
+            if (cfg.nomes && !cfg.nomes[p.num]) continue;
             const d = dist(p, bola);
             if (d < melhorD) { melhorD = d; melhor = p; }
           }
@@ -840,9 +847,11 @@
     }
 
     function desenhaJogador(c, p, t) {
-      const R = raioJ();
+      const nm = cfg.nomes && p.eq === NOSSA ? cfg.nomes[p.num] : null;
+      const R = raioJ() * (nm ? nm.k : 1);
       const e = EQ[p.eq];
       sombra(c, p.x, p.y, R);
+      if (nm) G.gfx.label(c, nm.nome, p.x, p.y - R * 1.75, Math.max(11, raioJ() * 0.62), nm.cor, 'center');
       c.save();
       c.translate(p.x, p.y);
       if (p.cai > 0) c.rotate(Math.sin(t * 12) * 0.35 + 0.6);
@@ -876,7 +885,7 @@
       c.beginPath(); c.moveTo(R * 0.7, -R * 0.2); c.lineTo(R * 1.15, -R * 0.2 + ba * R - sw * 0.4); c.stroke();
       c.fillStyle = '#f0c9a0';
       c.beginPath(); c.arc(0, -R * 0.35, R * 0.5, 0, TAU); c.fill();
-      c.fillStyle = '#3a2b1d';
+      c.fillStyle = nm && nm.cabelo ? nm.cabelo : '#3a2b1d';
       c.beginPath(); c.arc(0, -R * 0.42, R * 0.42, 0, TAU); c.fill();
       c.restore();
       if (p.cai > 0) G.gfx.star(c, p.x + R * 0.9, p.y - R * 1.1, R * 0.3, '#ffd166', t * 4);
@@ -1071,6 +1080,17 @@
     c.globalAlpha = 1;
   }
 
+  // o campo do jogo do pai e do Isaac tem um coração grande pintado
+  function coracaoPintado(c, t, cp) {
+    const s = cp.h * 0.5;
+    c.save();
+    c.translate(cp.cx, cp.cy);
+    c.globalAlpha = 0.13;
+    G.gfx.heart(c, 0, 0, s, '#ff3b6b');
+    c.restore();
+    c.globalAlpha = 1;
+  }
+
   G.scenes = G.scenes || {};
 
   G.scenes.dragao = criaJogo({
@@ -1110,6 +1130,33 @@
     txt: {
       entrada: 'BARÇA x REAL MADRID! ⚽🔵🔴', nosso: 'Barça',
       goloNosso: 'GOLO DO BARÇA! ⚽🔵🔴', goloDeles: 'Golo do Real Madrid ⚪'
+    }
+  });
+
+  // pedido do Isaac (2026-11-11): "futebol em que eu e o meu pai, o Kelwin, jogamos e
+  // marcamos golos; eu sou o Isaac e também sou o pai". Na mesma equipa estão o Isaac (o 8,
+  // pequenino) e o pai (o 11, grande), e só se conduz um deles: troca-se para quem está
+  // mais perto da bola. Os outros colegas jogam sozinhos.
+  G.scenes.paifilho = criaJogo({
+    nossa: 'familia', deles: 'piratas',
+    primeiro: 8,
+    nomes: {
+      8: { nome: 'ISAAC', k: 0.86, cor: '#e85d04', cabelo: '#6b4226' },
+      11: { nome: 'PAI', k: 1.3, cor: '#1d3557', cabelo: '#2b1d14' }
+    },
+    eq: {
+      familia: { nome: 'ISAAC E PAI', cor: '#ff8c42', riscas: '#ffd166', nRiscas: 2, espRisca: 0.7, largRisca: 0.22,
+        calcao: '#1d3557', gk: '#39d353', dir: 1, confetes: ['#ff8c42', '#ffd166', '#ffffff'] },
+      piratas: { nome: 'PIRATAS', cor: '#343a40', debrum: '#e9ecef', calcao: '#212529', gk: '#c77dff', dir: -1,
+        confetes: ['#343a40', '#ffffff', '#adb5bd'] }
+    },
+    adeptos: [['#ff8c42', 0.45], ['#ffd166', 0.25], ['#ffffff', 0.15], ['#1d3557', 0.15]],
+    visitantes: [['#343a40', 0.7], ['#ffffff', 0.3]],
+    pintura: coracaoPintado,
+    intervalo: false,
+    txt: {
+      entrada: 'O ISAAC E O PAI contra os PIRATAS! ⚽❤️', nosso: 'Isaac e o pai',
+      goloNosso: 'GOLO DO ISAAC E DO PAI! ⚽❤️', goloDeles: 'Golo dos Piratas 🏴‍☠️'
     }
   });
 })();

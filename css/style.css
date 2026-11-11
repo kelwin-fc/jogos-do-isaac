@@ -85,7 +85,9 @@ body.scene-pista #btnFire { display: block; }
 body.scene-dragao #btnHorn,
 body.scene-dragao #btnFire,
 body.scene-classico #btnHorn,
-body.scene-classico #btnFire { display: block; }
+body.scene-classico #btnFire,
+body.scene-paifilho #btnHorn,
+body.scene-paifilho #btnFire { display: block; }
 
 /* COBRAS: conduz-se arrastando o dedo (ou setas). 💨 dá o esticão e 🎉 põe as
    cobras à volta a dançar — o 🎉 fica por cima do 💨, do lado direito. */
@@ -153,6 +155,17 @@ body.scene-robos.robos-super #btnDoor {
 @media (max-width: 560px) {
   body.scene-robos.robos-super #btnDoor { bottom: calc(126px + env(safe-area-inset-bottom)); }
 }
+/* ROBÔS NO CARRO: ◀ ▶ ⬆, a espingarda comprida do pai 🔫 (btnFire) e o tiro especial 💥 (btnHorn) */
+body.scene-robocarro #btnLeft,
+body.scene-robocarro #btnRight,
+body.scene-robocarro #btnJump,
+body.scene-robocarro #btnFire { display: block; }
+body.scene-robocarro #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(255, 140, 66, 0.6);
+}
+body.scene-robocarro.robocarro-especial-espera #btnHorn { opacity: 0.4; }
 /* O REI: ◀ ▶ ⬆, as setas 🏹 (btnFire) e a corneta 📯 (btnHorn, por cima do ◀) */
 body.scene-rei #btnLeft,
 body.scene-rei #btnRight,
