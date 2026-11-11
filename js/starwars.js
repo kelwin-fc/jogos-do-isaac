@@ -156,18 +156,20 @@
   function botaoFogo(modo) {
     if (modo === fogoAPe) return;
     fogoAPe = modo;
-    document.getElementById('btnFire').textContent = modo === 'bebe' ? '✨' : '🔫';
+    document.getElementById('btnFire').textContent = modo === 'bebe' ? '✨' : (modo === 'lobo' || s.loboT > 0 ? '🐺' : '🔫');
     document.getElementById('btnHorn').textContent = modo === 'amigo' ? '🪢' : '✋';
     document.getElementById('btnChama').textContent = '🔄';
     document.body.classList.toggle('sw-pe', modo !== 'nave');
+    document.body.classList.toggle('sw-lobo', modo === 'lobo');
   }
   // onde estamos agora (a nave, o boi ou quem anda a pé) e o tamanho para os toques
   function eu() {
     if (boi) return { x: boi.x, y: boi.y - 120, mx: 120, my: 90 };
+    if (pe && s.loboT > 0) return { x: pe.x, y: pe.y - 46, mx: 46, my: 34 };   // lobo inteiro
     if (pe) return pe.quem === 'amigo' ? { x: pe.x, y: pe.y - 50, mx: 16, my: 44 } : { x: pe.x, y: pe.y - 32, mx: 16, my: 26 };
     return { x: s.wx, y: s.y, mx: 52, my: 20 };
   }
-  function pertoDaNave() { return !!pe && Math.abs(pe.x - s.wx) < 190 && pe.y > s.y - 160; }
+  function pertoDaNave() { if (pe && s.loboT > 0) return true; return !!pe && Math.abs(pe.x - s.wx) < 190 && pe.y > s.y - 160; }
   function outroBoneco() { return fora ? (fora[0] === pe ? fora[1] : fora[0]) : null; }
   function recargaPoder() { return pe && pe.quem === 'amigo' ? s.cordaCd : s.forcaCd; }
   // as partes de cima de um boi de Lego onde se pode estar de pé
@@ -181,6 +183,14 @@
   }
   function sairDaNave() {
     fase = 'voa';
+    if (s.loboT > 0) {
+      fora = [boneco('lobo', s.wx)]; pe = fora[0];
+      s.vy = 0; s.tilt = 0;
+      botaoFogo('lobo');
+      G.audio.sfx('hop');
+      fala('Auuu! O lobo saltou para o chão!');
+      return;
+    }
     fora = [boneco('bebe', s.wx - 50), boneco('amigo', s.wx + 40)];
     pe = fora[0];
     s.y = chaoY() - 34; s.vy = 0; s.tilt = 0;
@@ -191,13 +201,14 @@
   }
   function entrarNaNave(semSom) {
     if (!pe) return;
+    if (s.loboT > 0) { s.wx = pe.x; s.y = pe.y - 46; }   // o lobo levanta voo de onde está
     pe = null; fora = null; cordas = [];
     s.sx = clamp(s.wx - camX, 80, vw() * 0.62); s.vy = -260; s.inv = Math.max(s.inv, 1);
     botaoFogo('nave');
     if (!semSom) G.audio.sfx('door');
   }
   function trocaBoneco() {
-    if (!fora) return;
+    if (!fora || fora.length < 2) return;
     pe = outroBoneco();
     botaoFogo(pe.quem);
     G.audio.sfx('pop');
@@ -224,6 +235,16 @@
     tiros.push({ x: x, y: y, vx: Math.cos(a) * 760 * o.dir, vy: Math.sin(a) * 760, t: 0, verde: true });
     s.forcaT = Math.max(s.forcaT, 0.25);
     G.audio.sfx('teia');
+  }
+  // o lobo a pé: um uivo que voa para a frente (vale 2)
+  function uivoAPe(o) {
+    const x = o.x + o.dir * 86, y = o.y - 78;
+    const e = alvoNaFrente(o, y, 600), b = e ? caixa(e) : null;
+    let a = b ? Math.atan2(b.y - y, (b.x - x) * o.dir) : 0;
+    a = clamp(a, -1, 0.5);
+    tiros.push({ x: x, y: y, vx: Math.cos(a) * 820 * o.dir, vy: Math.sin(a) * 820, t: 0, uivo: true, pe: true });
+    o.tiroT = 0.15;
+    G.audio.sfx('uuu');
   }
   // a espingarda comprida do amigo: raios laser compridos e rápidos
   function espingarda(o, sozinho) {
@@ -476,9 +497,9 @@
     if (sozinho && !b) return false;
     let a = b ? Math.atan2(b.y - o.y, b.x - o.x) : s.tilt * 0.6;
     a = clamp(a, -0.6, 0.6);
-    tiros.push({ x: o.x, y: o.y, vx: Math.cos(a) * 980 + vel, vy: Math.sin(a) * 980, t: 0 });
+    tiros.push({ x: o.x, y: o.y, vx: Math.cos(a) * 980 + vel, vy: Math.sin(a) * 980, t: 0, uivo: s.loboT > 0 });
     s.tiroT = 0.12;
-    G.audio.sfx(sozinho ? 'zap' : 'pew');
+    G.audio.sfx(s.loboT > 0 ? 'uuu' : (sozinho ? 'zap' : 'pew'));
     return true;
   }
   function tiroMau(x, y, tipo) {
@@ -500,8 +521,8 @@
     if (s.coracoes <= 0) {
       entrarNaNave(true);
       fase = 'oficina'; faseT = 0;
-      G.banner('Vamos arranjar a nave! 🔧', 2400);
-      fala('Oh! O amigo vai arranjar a nave!');
+      if (s.loboT > 0) { G.banner('O lobo vai descansar um bocadinho 💤', 2400); fala('O lobo está cansado. Vai descansar!'); }
+      else { G.banner('Vamos arranjar a nave! 🔧', 2400); fala('Oh! O amigo vai arranjar a nave!'); }
     }
     return true;
   }
@@ -519,9 +540,11 @@
     s.loboT = LOBO;
     for (let i = 0; i < 16; i++) parts.push({ k: 'p', x: x + rnd(-50, 50), y: y + rnd(-40, 30), vx: rnd(-90, 90), vy: rnd(-120, -30), t: 0, life: 0.8, cor: 'rgba(200,200,200,.6)', g: 0, r: rnd(10, 22) });
     if (ja) return;
+    if (pe) { pe.quem = 'lobo'; fora = [pe]; cordas = []; s.wx = pe.x; s.y = pe.y - 46; }
+    fogoAPe = null; botaoFogo(pe ? 'lobo' : 'nave');
     G.audio.sfx('uivo');
-    G.banner('Somos lobos! 🐺🐺', 2400);
-    fala('Auuuu! Somos lobos!');
+    G.banner('Agora és um lobo! 🐺 Até ao fim do jogo', 2600);
+    fala('Auuuu! Agora sou um lobo até ao fim do jogo!');
   }
 
   /* ---------- a Força do bebé ---------- */
@@ -615,10 +638,6 @@
     }
 
     s.inv = Math.max(0, s.inv - dt); s.flash = Math.max(0, s.flash - dt);
-    if (s.loboT > 0) {
-      s.loboT = Math.max(0, s.loboT - dt);
-      if (s.loboT === 0) { const q = eu(); viraLoboFumo(q.x, q.y); G.audio.sfx('poof'); fala('Voltámos ao normal!'); }
-    }
     s.cdTiro -= dt; s.cdAmigo -= dt; s.tiroT = Math.max(0, s.tiroT - dt);
 
     if (fase === 'oficina') {
@@ -630,7 +649,7 @@
       if (faseT > 1 && Math.floor(faseT * 4) !== Math.floor((faseT - dt) * 4)) { faiscas(s.wx + 10, s.y - 10, 4, '#ffd166'); G.audio.sfx('clic'); }
       if (faseT > OFICINA) {
         fase = 'voa'; s.coracoes = MAXC; s.inv = 2;
-        G.audio.sfx('suit'); G.banner('A nave está arranjada! 🔧✨', 2000);
+        G.audio.sfx(s.loboT > 0 ? 'uivo' : 'suit'); G.banner(s.loboT > 0 ? 'O lobo acordou! 🐺' : 'A nave está arranjada! 🔧✨', 2000);
       }
     } else if (fase === 'pousa') {
       // a nave pousa e o bebé sai cá para fora
@@ -674,6 +693,7 @@
       if (dist > (Math.abs(ax) > 0.1 ? 150 : 30)) pe.naveVem = true; else if (dist < 12) pe.naveVem = false;
       if (pe.naveVem) s.wx += clamp(alvoN - s.wx, -300 * dt, 300 * dt);
       s.y += ((pe.naveVem ? chao - 90 : chao - 34) - s.y) * Math.min(1, dt * 3);
+      if (s.loboT > 0) { s.wx = pe.x; s.y = pe.y - 46; }   // o lobo não tem nave à espera
       s.tilt *= 0.9;
       if (I.justPressed('door') && pertoDaNave()) entrarNaNave();
       else if (I.justPressed('chama')) trocaBoneco();
@@ -700,11 +720,12 @@
     s.cordaCd = Math.max(0, s.cordaCd - dt);
     if (fase !== 'oficina') {
       if (I.isHeld('fire') && s.cdTiro <= 0) {
-        if (pe && pe.quem === 'amigo') { espingarda(pe, false); s.cdTiro = 0.28; }
+        if (pe && pe.quem === 'lobo') { uivoAPe(pe); s.cdTiro = 0.3; }
+        else if (pe && pe.quem === 'amigo') { espingarda(pe, false); s.cdTiro = 0.28; }
         else if (pe) { bolinha(pe); s.cdTiro = 0.34; }
         else if (fase !== 'pousa') { dispara(false); s.cdTiro = 0.3; }
       }
-      if (!fora && s.cdAmigo <= 0) s.cdAmigo = dispara(true) ? 2.6 : 0.5;
+      if (!fora && s.loboT === 0 && s.cdAmigo <= 0) s.cdAmigo = dispara(true) ? 2.6 : 0.5;
       if (I.justPressed('horn')) {
         if (pe && pe.quem === 'amigo') { if (s.cordaCd <= 0) corda(pe); }
         else if (s.forcaCd <= 0) forca();
@@ -994,8 +1015,7 @@
         if (boi) {
           if (e.noChao && Math.abs(e.x - (boi.x + 60)) < 230 && e.y > boi.y - 240) { e.hp = 0; converte(e); }
         } else if (fase === 'voa' && toca(b, eu().x, eu().y, eu().mx, eu().my)) {
-          if (e.tipo === 'lobisomem' && s.loboT > 0) { e.hp = 0; converte(e); texto('🐺❤️', e.x, e.y - 140); continue; }
-          if (e.tipo === 'lobisomem') viraLobo(eu().x, eu().y);
+          if (e.tipo === 'lobisomem' && s.loboT === 0) viraLobo(eu().x, eu().y);
           if (magoa(eu().x, eu().y)) {
             if (pe) { pe.vy = -520; pe.noChao = false; pe.x += (pe.x < e.x ? -50 : 50); }
             else s.vy = -320;
@@ -1012,7 +1032,7 @@
       const m = tiros[i];
       m.t += dt; m.x += m.vx * dt; m.y += m.vy * dt;
       const sx = m.x - camX;
-      if (sx > W + 60 || sx < -60 || m.y < -40 || m.y > chao + 10 || m.t > 2 || (m.verde && m.t > 0.6)) { tiros.splice(i, 1); continue; }
+      if (sx > W + 60 || sx < -60 || m.y < -40 || m.y > chao + 10 || m.t > 2 || (m.verde && m.t > 0.6) || (m.pe && m.t > 0.85)) { tiros.splice(i, 1); continue; }
       for (const e of ents) {
         if (!atacavel(e)) continue;
         if (toca(caixa(e), m.x, m.y, 8, 8)) { acerta(e, s.loboT > 0 ? 2 : 1); tiros.splice(i, 1); break; }
@@ -1113,14 +1133,14 @@
   }
 
   // cabeça de lobo cinzento (virada para a direita), por cima da cabeça de quem virou lobo
-  function cabecaLobo(c, x, y, r) {
-    c.fillStyle = '#8d8d8d';
+  function cabecaLobo(c, x, y, r, cor, orelha) {
+    c.fillStyle = orelha || '#8d8d8d';
     c.beginPath(); c.moveTo(x - r * 0.85, y - r * 0.4); c.lineTo(x - r * 0.75, y - r * 1.65); c.lineTo(x - r * 0.05, y - r * 0.85); c.closePath(); c.fill();
     c.beginPath(); c.moveTo(x + r * 0.05, y - r * 0.85); c.lineTo(x + r * 0.6, y - r * 1.7); c.lineTo(x + r * 0.85, y - r * 0.4); c.closePath(); c.fill();
     c.fillStyle = '#f4a6b8';
     c.beginPath(); c.moveTo(x - r * 0.65, y - r * 0.6); c.lineTo(x - r * 0.62, y - r * 1.3); c.lineTo(x - r * 0.25, y - r * 0.85); c.closePath(); c.fill();
     c.beginPath(); c.moveTo(x + r * 0.25, y - r * 0.85); c.lineTo(x + r * 0.55, y - r * 1.35); c.lineTo(x + r * 0.65, y - r * 0.6); c.closePath(); c.fill();
-    c.fillStyle = '#9e9e9e'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+    c.fillStyle = cor || '#9e9e9e'; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
     c.fillStyle = '#e0e0e0'; c.beginPath(); c.ellipse(x + r * 0.6, y + r * 0.32, r * 0.62, r * 0.42, 0, 0, TAU); c.fill();
     c.fillStyle = '#1b1b1b'; c.beginPath(); c.arc(x + r * 1.15, y + r * 0.2, r * 0.18, 0, TAU); c.fill();
     c.fillStyle = '#ffd60a'; c.beginPath(); c.arc(x - r * 0.3, y - r * 0.25, r * 0.24, 0, TAU); c.arc(x + r * 0.3, y - r * 0.3, r * 0.24, 0, TAU); c.fill();
@@ -1785,6 +1805,17 @@
         c.strokeStyle = '#ffffff'; c.lineWidth = 3; c.stroke();
         continue;
       }
+      if (m.uivo) {
+        // o uivo do lobo: ondas de som prateadas
+        const a3 = Math.atan2(m.vy, m.vx - (m.pe ? 0 : vel)), cx = m.x - Math.cos(a3) * 18, cy = m.y - Math.sin(a3) * 18;
+        c.lineWidth = 5;
+        for (let k = 0; k < 3; k++) {
+          const r = 10 + k * 9 + m.t * 20;
+          c.strokeStyle = k === 0 ? '#ffffff' : 'rgba(210,220,255,' + (0.8 - k * 0.22) + ')';
+          c.beginPath(); c.arc(cx, cy, r, a3 - 0.85, a3 + 0.85); c.stroke();
+        }
+        continue;
+      }
       if (m.verde) {
         c.fillStyle = 'rgba(158,240,26,.35)'; c.beginPath(); c.arc(m.x, m.y, 16, 0, TAU); c.fill();
         c.fillStyle = '#d8f3a0'; c.beginPath(); c.arc(m.x, m.y, 8, 0, TAU); c.fill();
@@ -1799,12 +1830,16 @@
     if (!boi) {
       c.save(); c.translate(s.wx, s.y + (fase === 'oficina' ? 0 : Math.sin(t * 3) * 3)); c.rotate(s.tilt);
       if (s.inv > 0 && fase === 'voa' && Math.floor(t * 12) % 2 === 0) c.globalAlpha = 0.45;
-      navePrincipal(c, t, s.tiroT > 0, s.forcaT > 0, !!pe);
+      if (s.loboT > 0) { if (!pe) loboVoa(c, t, s.tiroT > 0); }
+      else navePrincipal(c, t, s.tiroT > 0, s.forcaT > 0, !!pe);
       c.restore();
-      if (fase === 'oficina') oficina(c, t);
+      if (fase === 'oficina' && s.loboT > 0) {
+        c.font = '30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
+        c.fillText('💤', s.wx + 60, s.y - 60 - (t * 30) % 30);
+      } else if (fase === 'oficina') oficina(c, t);
       if (fora) {
         const o2 = outroBoneco();
-        desenhaBoneco(c, o2, t, false);
+        if (o2) desenhaBoneco(c, o2, t, false);   // (lobo: só há um)
         desenhaBoneco(c, pe, t, true);
         desenhaCordas(c, t);
       }
@@ -1871,17 +1906,59 @@
 
   // quem anda a pé; o que conduzimos leva uma setinha amarela por cima
   function desenhaBoneco(c, o, t, conduzido) {
-    if (o.quem === 'bebe') bebeAPe(c, o, t, conduzido); else amigoAPe(c, o, t, conduzido);
+    if (s.loboT > 0) loboAPe(c, o, t, conduzido);
+    else if (o.quem === 'bebe') bebeAPe(c, o, t, conduzido); else amigoAPe(c, o, t, conduzido);
     if (conduzido) {
-      const y = o.y - (o.quem === 'bebe' ? 96 : 132) + Math.sin(t * 6) * 4;
+      const y = o.y - (s.loboT > 0 ? 122 : (o.quem === 'bebe' ? 96 : 132)) + Math.sin(t * 6) * 4;
       c.fillStyle = '#ffd60a'; c.strokeStyle = '#7a5a00'; c.lineWidth = 2;
       c.beginPath(); c.moveTo(o.x - 10, y - 10); c.lineTo(o.x + 10, y - 10); c.lineTo(o.x, y + 2); c.closePath(); c.fill(); c.stroke();
     }
     // a dizer onde é a porta da nave para voltar a entrar
-    if (conduzido && pertoDaNave()) {
+    if (conduzido && pertoDaNave() && s.loboT === 0) {
       c.font = '30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
       c.fillText('🚪', s.wx, s.y - 70 + Math.sin(t * 5) * 5);
     }
+  }
+  // a pé, quando viramos lobo, o corpo é MESMO de lobo (quatro patas, do tamanho de um lobo).
+  // É um lobo só: não há bebé, nem amigo, nem pistola. Ataca com uivos.
+  function loboAPe(c, o, t, conduzido) {
+    const pelo = '#8d8d8d', escuro = '#6e6e6e';
+    c.save(); c.translate(o.x, o.y);
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 1, 50, 7, 0, 0, TAU); c.fill();
+    if (conduzido && s.inv > 0 && Math.floor(t * 12) % 2 === 0) c.globalAlpha = 0.45;
+    if (o.dir < 0) c.scale(-1, 1);
+    const p = o.noChao ? Math.sin(o.walk / 14) * 11 : 8;
+    caudaLobo(c, -44, -56, t, 1.4);
+    c.strokeStyle = escuro; c.lineWidth = 11; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-30, -44); c.lineTo(-34 - p, -3); c.moveTo(26, -44); c.lineTo(22 + p, -3); c.stroke();
+    c.strokeStyle = pelo;
+    c.beginPath(); c.moveTo(-18, -44); c.lineTo(-14 + p, -3); c.moveTo(38, -44); c.lineTo(42 - p, -3); c.stroke();
+    c.fillStyle = pelo; c.beginPath(); c.ellipse(4, -54, 48, 23, 0, 0, TAU); c.fill();
+    c.fillStyle = '#d9d9d9'; c.beginPath(); c.ellipse(16, -42, 26, 10, 0, 0, TAU); c.fill();
+    c.fillStyle = pelo; c.beginPath(); c.moveTo(28, -70); c.lineTo(52, -86); c.lineTo(60, -62); c.lineTo(40, -44); c.closePath(); c.fill();
+    c.fillStyle = escuro; c.beginPath(); c.ellipse(-2, -70, 30, 8, 0, 0, TAU); c.fill();   // o pelo do lombo
+    cabecaLobo(c, 54, -84, 22, pelo, escuro);
+    if (o.tiroT > 0) { c.fillStyle = 'rgba(230,235,255,.9)'; c.beginPath(); c.arc(84, -78, 8, 0, TAU); c.fill(); }
+    c.restore();
+  }
+  // na nave, depois de virar lobo: é o próprio lobo que voa (a galopar no ar), sem nave
+  function loboVoa(c, t, tiro) {
+    const pelo = '#8d8d8d', escuro = '#6e6e6e', p = Math.sin(t * 14) * 14;
+    // rasto de vento
+    c.strokeStyle = 'rgba(220,225,255,.45)'; c.lineWidth = 3; c.lineCap = 'round';
+    for (let k = 0; k < 3; k++) { const y = -18 + k * 16, x = -96 - ((t * 300 + k * 40) % 60); c.beginPath(); c.moveTo(x, y); c.lineTo(x - 34, y); c.stroke(); }
+    caudaLobo(c, -54, -8, t, 1.5);
+    // patas esticadas, como quem salta
+    c.strokeStyle = escuro; c.lineWidth = 12;
+    c.beginPath(); c.moveTo(-34, 8); c.lineTo(-70 - p * 0.5, 22); c.moveTo(30, 10); c.lineTo(66 + p * 0.5, 22); c.stroke();
+    c.strokeStyle = pelo;
+    c.beginPath(); c.moveTo(-22, 10); c.lineTo(-58 + p * 0.5, 28); c.moveTo(42, 10); c.lineTo(78 - p * 0.5, 26); c.stroke();
+    c.fillStyle = pelo; c.beginPath(); c.ellipse(0, 0, 58, 25, 0, 0, TAU); c.fill();
+    c.fillStyle = '#d9d9d9'; c.beginPath(); c.ellipse(14, 12, 30, 10, 0, 0, TAU); c.fill();
+    c.fillStyle = escuro; c.beginPath(); c.ellipse(-6, -18, 34, 8, 0, 0, TAU); c.fill();
+    c.fillStyle = pelo; c.beginPath(); c.moveTo(30, -18); c.lineTo(56, -34); c.lineTo(66, -8); c.lineTo(44, 12); c.closePath(); c.fill();
+    cabecaLobo(c, 62, -30, 24, pelo, escuro);
+    if (tiro) { c.fillStyle = 'rgba(230,235,255,.9)'; c.beginPath(); c.arc(92, -24, 9, 0, TAU); c.fill(); }
   }
   function bebeAPe(c, o, t, conduzido) {
     const k = 1.7;
@@ -2548,7 +2625,7 @@
       c.save(); c.translate(214, 34);
       c.fillStyle = vazio; c.beginPath(); c.arc(0, 0, 20, 0, TAU); c.fill();
       c.strokeStyle = '#c0c0c0'; c.lineWidth = 5;
-      c.beginPath(); c.arc(0, 0, 20, -Math.PI / 2, -Math.PI / 2 + TAU * s.loboT / LOBO); c.stroke();
+      c.beginPath(); c.arc(0, 0, 20, 0, TAU); c.stroke();
       c.font = '22px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000';
       c.fillText('🐺', 0, 1);
       c.restore();
@@ -2580,13 +2657,14 @@
     // cá fora: as fotos do bebé e do amigo (toca-se para escolher quem se conduz)
     hudBonecos = [];
     if (fora) {
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < fora.length; i++) {
         const o = fora[i], x = 32 + i * 56, y = 200, sel = o === pe;
         c.fillStyle = sel ? 'rgba(255,214,10,.95)' : 'rgba(255,255,255,.55)';
         c.beginPath(); c.arc(x, y, sel ? 25 : 21, 0, TAU); c.fill();
         c.strokeStyle = sel ? '#7a5a00' : 'rgba(0,0,0,.3)'; c.lineWidth = 3; c.stroke();
         c.save(); c.beginPath(); c.arc(x, y, sel ? 22 : 18, 0, TAU); c.clip();
-        if (o.quem === 'bebe') bebe(c, x, y + 4, 1.05, t, false);
+        if (o.quem === 'lobo') cabecaLobo(c, x - 3, y + 6, 14, '#8d8d8d', '#6e6e6e');
+        else if (o.quem === 'bebe') bebe(c, x, y + 4, 1.05, t, false);
         else {
           c.fillStyle = '#dee2e6'; c.beginPath(); c.arc(x, y + 2, 15, Math.PI, 0); c.lineTo(x + 15, y + 18); c.lineTo(x - 15, y + 18); c.closePath(); c.fill();
           c.fillStyle = '#212529'; G.gfx.rr(c, x - 4, y - 2, 18, 5, 2); c.fill(); c.fillRect(x + 6, y - 2, 5, 15);

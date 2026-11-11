@@ -153,6 +153,17 @@ body.scene-robos.robos-super #btnDoor {
 @media (max-width: 560px) {
   body.scene-robos.robos-super #btnDoor { bottom: calc(126px + env(safe-area-inset-bottom)); }
 }
+/* O REI: ◀ ▶ ⬆, as setas 🏹 (btnFire) e a corneta 📯 (btnHorn, por cima do ◀) */
+body.scene-rei #btnLeft,
+body.scene-rei #btnRight,
+body.scene-rei #btnJump,
+body.scene-rei #btnFire { display: block; }
+body.scene-rei #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(255, 209, 102, 0.6);
+}
+body.scene-rei.rei-corneta-espera #btnHorn { opacity: 0.4; }
 /* STAR WARS: ◀ ▶ ⬆, as pistolas do amigo 🔫 (btnFire), a Força do bebé ✋ (btnHorn, por
    cima do ◀, apagadinha enquanto recarrega) e o 🚪 só quando estamos dentro do boi de Lego */
 body.scene-starwars #btnLeft,
@@ -174,6 +185,8 @@ body.scene-starwars.sw-dentro #btnDoor {
   font-size: 44px;
   animation: portaPisca 1.1s ease-in-out infinite;
 }
+/* no Halloween, depois de virar lobo, só há um lobo: não há com quem trocar */
+body.scene-starwars.sw-pe.sw-lobo #btnChama { display: none !important; }
 /* cá fora a pé: o 🔄 troca entre o bebé e o amigo (por cima do ▶) */
 body.scene-starwars.sw-pe #btnChama {
   display: block;

@@ -18,7 +18,12 @@
   const TAU = Math.PI * 2;
   const S = {};
 
-  const MUNDO = 6400, PRISAO_X = 3200;
+  const MUNDO = 7700, PRISAO_X = 3200;
+  // 7.ª ronda (2026-11-11): "duas prisões" e "nós também temos casa normal, como as outras pessoas,
+  // e cristais que nunca saem" (os ladrões nunca os levam)
+  const PRISAO2_X = 7250, PRISOES = [PRISAO_X, PRISAO2_X];
+  function prisaoPerto(x) { return Math.abs(x - PRISAO_X) <= Math.abs(x - PRISAO2_X) ? PRISAO_X : PRISAO2_X; }
+  let ultimaPx = PRISAO_X;   // a festa é à porta da prisão onde entrou o último vilão
   // pedidos do Isaac (2026-09-20): a Torre dos Vingadores dá para SUBIR, há um
   // RESTAURANTE onde se come, BALÕES para rebentar e CARROS na estrada
   const TORRE_X = 1150, TORRE_W = 300, TORRE_H = 900;
@@ -565,7 +570,8 @@
     { x: 2010, cor: '#ffe08a', telhado: '#e07a1f' },
     { x: 2700, cor: '#a8dadc', telhado: '#1d7874' },
     { x: 5140, cor: '#c9b6e4', telhado: '#6a4c93' },
-    { x: 5980, cor: '#b5e6b5', telhado: '#2d6a4f' }
+    { x: 5980, cor: '#b5e6b5', telhado: '#2d6a4f' },
+    { x: 6620, cor: '#cfe2ff', telhado: '#1d3557', herois: true }   // a casa dos heróis da Marvel
   ];
   const FONTES = [1760, 3830];
   const SPAWN = [700, 1500, 2350, 4050, 4900, 5750];
@@ -592,7 +598,7 @@
     const CORES_T = ['#e3242b', '#1e6fd9', '#ffcf1a', '#1fae4b', '#ff8a1c'];
     while (x < MUNDO - 500) {
       const longeDasCasas = CASAS.every(function (h) { return Math.abs(x + 120 - h.x) > 420; });
-      if (longeDasCasas && Math.abs(x + 120 - PRISAO_X) > 420 && Math.abs(x + 120 - TORRE_X) > 430 &&
+      if (longeDasCasas && PRISOES.every(function (px) { return Math.abs(x + 120 - px) > 420; }) && Math.abs(x + 120 - TORRE_X) > 430 &&
           Math.abs(x + 120 - REST_X) > 450 && FONTES.every(function (f) { return Math.abs(x + 120 - f) > 260; })) {
         const nivel = r() < 0.45 ? 1 : (r() < 0.65 ? 2 : 3);
         const w = 200 + Math.floor(r() * 4) * 40;
@@ -660,7 +666,7 @@
   function criaPinos() {
     pinos = [];
     for (let x = 250; x < MUNDO - 200; x += 170) {
-      if (Math.abs(x - PRISAO_X) < 240) continue;
+      if (PRISOES.some(function (px) { return Math.abs(x - px) < 240; })) continue;
       pinos.push({ x: x, y: -22, v: (x % 1190 < 170) ? 5 : 1, fixo: true });
     }
     for (const p of PLAT) {
@@ -977,14 +983,16 @@
   function setTimeoutJogo(seg, fn) { agenda.push({ t: tempo + seg, fn: fn }); }
 
   function chamaPolicia(v) {
-    const car = { x: PRISAO_X + (v.x > PRISAO_X ? 160 : -160), dir: v.x > PRISAO_X ? 1 : -1, estado: 'vai', alvo: v, t: 0, preso: null };
+    const px = prisaoPerto(v.x);
+    const car = { x: px + (v.x > px ? 160 : -160), dir: v.x > px ? 1 : -1, estado: 'vai', alvo: v, t: 0, preso: null, px: px };
     v.carro = car;
     carros.push(car);
     sfx('sirene');
   }
 
-  function prende(v, peloHeroi) {
+  function prende(v, peloHeroi, px) {
     v.estado = 'preso';
+    v.prisao = px || prisaoPerto(v.x); ultimaPx = v.prisao;
     presos.push(v);
     sfx('prisao');
     G.addStars(peloHeroi ? 3 : 2);
@@ -1012,7 +1020,7 @@
           G.addStars(20);
           for (let k = 0; k < 6; k++) {
             setTimeoutJogo(k * 0.35, function () {
-              faisca(PRISAO_X + rnd(-400, 400), rnd(-520, -160), ['#e63946', '#ffd166', '#4cc9f0', '#8ac926', '#ff6fb1'][k % 5], 26, 520);
+              faisca(ultimaPx + rnd(-400, 400), rnd(-520, -160), ['#e63946', '#ffd166', '#4cc9f0', '#8ac926', '#ff6fb1'][k % 5], 26, 520);
             });
           }
         });
@@ -1379,11 +1387,16 @@
           { x: x0 + 62, y: -104, w: 64, h: 62, partido: 0, brilho: 0, andar: 0 },
           { x: x0 + CASA_W - 126, y: -254, w: 64, h: 62, partido: 0, brilho: 0, andar: 1 }
         ],
-        brilhantes: [
+        brilhantes: h.herois ? [] : [
           { x: x0 + CASA_W - 78, y: -40, cor: '#4cc9f0', levado: null, volta: 0 },
           { x: x0 + 92, y: -190, cor: '#ff6fb1', levado: null, volta: 0 }
         ],
-        moradores: [
+        cristais: h.herois ? [
+          { x: x0 + CASA_W - 78, y: -40, cor: '#b388ff' },
+          { x: x0 + 92, y: -190, cor: '#4cc9f0' },
+          { x: x0 + 206, y: -190, cor: '#ff5d8f' }
+        ] : [],
+        moradores: h.herois ? [] : [
           { def: CIVIS[(h.x | 0) % CIVIS.length], x: x0 + 206, y: 0, fase: 0 },
           { def: CRIANCA, x: x0 + 62, y: -CASA_ANDAR, fase: 1.5 }
         ],
@@ -1840,10 +1853,10 @@
         }
       }
     }
-    if (h.carrega && Math.abs(h.x - PRISAO_X) < 120 && h.y > -60) {
-      const v = h.carrega; h.carrega = null;
-      prende(v, true);
-      faisca(PRISAO_X, -60, '#ffd166', 20);
+    if (h.carrega && Math.abs(h.x - prisaoPerto(h.x)) < 120 && h.y > -60) {
+      const v = h.carrega, px = prisaoPerto(h.x); h.carrega = null;
+      prende(v, true, px);
+      faisca(px, -60, '#ffd166', 20);
     }
 
     // apanhar pinos
@@ -1919,7 +1932,8 @@
       if (v.x < 150) alvoVx = Math.abs(alvoVx);
       if (v.x > MUNDO - 150) alvoVx = -Math.abs(alvoVx);
       // ninguém se esconde dentro da prisão
-      if (Math.abs(v.x - PRISAO_X) < 260 && !v.def.voa) alvoVx = (v.x < PRISAO_X ? -1 : 1) * vv;
+      const pxv = prisaoPerto(v.x);
+      if (Math.abs(v.x - pxv) < 260 && !v.def.voa) alvoVx = (v.x < pxv ? -1 : 1) * vv;
       v.vx += (alvoVx - v.vx) * Math.min(1, dt * (ve ? 2.5 : 4));
       v.x += v.vx * dt;
       if (Math.abs(v.vx) > 10) v.dirV = v.vx > 0 ? 1 : -1;
@@ -2086,11 +2100,11 @@
       } else if (car.estado === 'espera') {
         if (car.t > 2.5 && !car.preso) { car.estado = 'volta'; }
       } else if (car.estado === 'volta') {
-        const dx = PRISAO_X - car.x;
+        const dx = car.px - car.x;
         car.dir = dx > 0 ? 1 : -1;
         car.x += car.dir * Math.min(Math.abs(dx), 520 * dt);
         if (Math.abs(dx) < 4) {
-          if (car.preso) { prende(car.preso, false); car.preso = null; faisca(PRISAO_X, -60, '#ffd166', 16); }
+          if (car.preso) { prende(car.preso, false, car.px); car.preso = null; faisca(car.px, -60, '#ffd166', 16); }
           carros.splice(i, 1);
         }
       }
@@ -2166,7 +2180,7 @@
 
     if (vitoria) {
       vitoria.t += dt;
-      if (vitoria.t > 1 && Math.random() < dt * 8) faisca(PRISAO_X + rnd(-300, 300), rnd(-420, -200), ['#e63946', '#ffd166', '#4cc9f0', '#8ac926'][Math.floor(rnd(0, 4))], 12, 360);
+      if (vitoria.t > 1 && Math.random() < dt * 8) faisca(ultimaPx + rnd(-300, 300), rnd(-420, -200), ['#e63946', '#ffd166', '#4cc9f0', '#8ac926'][Math.floor(rnd(0, 4))], 12, 360);
       if (vitoria.t > 6.5) {
         vitoria = null;
         ronda++;
@@ -2412,6 +2426,25 @@
     G.gfx.star(c, b.x + 15, b.y - 28, 5 + Math.sin(t * 5 + b.x) * 1.6, '#fff8e1', t * 2);
   }
 
+  // um cristal grande que brilha (os da casa dos heróis nunca saem do sítio)
+  function cristal(c, q, t) {
+    const b = 0.5 + Math.sin(t * 3 + q.x) * 0.5;
+    c.save(); c.translate(q.x, q.y);
+    c.fillStyle = 'rgba(255,255,255,' + (0.15 + b * 0.25) + ')';
+    c.beginPath(); c.arc(0, -22, 30, 0, TAU); c.fill();
+    const pedras = [[-12, 0.8, -0.3], [0, 1.15, 0], [12, 0.75, 0.3]];
+    for (const p of pedras) {
+      c.save(); c.translate(p[0], 0); c.rotate(p[2]); c.scale(p[1], p[1]);
+      c.fillStyle = q.cor;
+      c.beginPath(); c.moveTo(0, -40); c.lineTo(9, -26); c.lineTo(7, 0); c.lineTo(-7, 0); c.lineTo(-9, -26); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.beginPath(); c.moveTo(0, -40); c.lineTo(3, -26); c.lineTo(2, -4); c.lineTo(-3, -26); c.closePath(); c.fill();
+      c.restore();
+    }
+    c.restore();
+    G.gfx.star(c, q.x + 14, q.y - 42, 4 + b * 3, '#fff', t * 2);
+  }
+
   function casa(c, ca, t) {
     const d = ca.def, x0 = ca.x0, W = CASA_W, H = CASA_ANDAR * 2;
     // parede de trás e o interior
@@ -2439,6 +2472,17 @@
       c.fillStyle = '#9c6644';
       c.fillRect(b.x - 26, b.y, 52, 7);
       brilhante(c, b, t);
+    }
+    // na casa dos heróis: cristais que nunca saem, e dois heróis em casa a descansar
+    for (const q of ca.cristais) { c.fillStyle = '#9c6644'; c.fillRect(q.x - 30, q.y, 60, 7); cristal(c, q, t); }
+    if (d.herois && !equipa) {
+      const n = HEROIS.length, emCasa = [HEROIS[(hi + 1) % n], HEROIS[(hi + 2) % n]];
+      emCasa.forEach(function (hd, k) {
+        const mx = k === 0 ? x0 + 206 : x0 + 60, my = k === 0 ? 0 : -CASA_ANDAR;
+        c.save(); c.translate(mx, my); c.scale(FIG * 0.92, FIG * 0.92);
+        boneco(c, hd, { t: t, dir: -1, fase: 0, anda: false, braco: 0.5 + Math.sin(t * 4 + k * 1.5) * 0.4 });
+        c.restore();
+      });
     }
     // quem lá mora
     for (const m of ca.moradores) {
@@ -2474,6 +2518,10 @@
           G.gfx.star(c, j.x + j.w / 2 + Math.cos(a) * 36, j.y + j.h / 2 + Math.sin(a) * 28, 6 * j.brilho, '#fff', a);
         }
       }
+    }
+    if (d.herois) {   // a placa por cima da porta
+      c.fillStyle = '#1d3557'; rr(c, ca.x - 150, -348, 210, 30, 8); c.fill();
+      G.gfx.label(c, 'CASA DOS HERÓIS', ca.x - 45, -332, 17, '#ffd166', 'center', 'none');
     }
     // chaminé (o telhado é a plataforma, desenhada a seguir)
     c.fillStyle = sombra(d.telhado, -0.15);
@@ -2616,8 +2664,8 @@
     c.restore();
   }
 
-  function prisao(c, t) {
-    const x = PRISAO_X, w = 460, h = 320, x0 = x - w / 2, y0 = -h;
+  function prisao(c, t, px) {
+    const x = px, w = 460, h = 320, x0 = x - w / 2, y0 = -h;
     // paredes de tijolo cinzento
     c.fillStyle = '#8d99ae'; rr(c, x0, y0, w, h, 6); c.fill();
     c.strokeStyle = 'rgba(40,50,70,.18)'; c.lineWidth = 2;
@@ -2632,7 +2680,8 @@
     c.fillStyle = '#22223b'; rr(c, x - 110, y0 - 64, 220, 50, 12); c.fill();
     c.strokeStyle = '#ffd166'; c.lineWidth = 3; rr(c, x - 110, y0 - 64, 220, 50, 12); c.stroke();
     cadeado(c, x - 78, y0 - 39, 15, '#ffd166');
-    G.gfx.label(c, 'PRISÃO', x + 14, y0 - 38, 28, '#ffd166', 'center', 'none');
+    G.gfx.label(c, px === PRISAO_X ? 'PRISÃO' : 'PRISÃO 2', x + 14, y0 - 38, 28, '#ffd166', 'center', 'none');
+    const aqui = presos.filter(function (v) { return (v.prisao || PRISAO_X) === px; });
     // seis celas com grades (quatro em cima, duas ao lado da porta); os presos aparecem lá dentro
     const cw = 90, ch = 78, gap = (w - 4 * cw) / 5;
     const celas = [];
@@ -2642,7 +2691,7 @@
     celas.forEach(function (q, idx) {
       const cx = q[0], cy = q[1];
       c.fillStyle = '#2b2d42'; rr(c, cx, cy, cw, ch, 6); c.fill();
-      const v = presos[idx];
+      const v = aqui[idx];
       if (v) {
         c.save(); rr(c, cx, cy, cw, ch, 6); c.clip();
         const e = 1.15 / (v.def.grande || 1);
@@ -3178,7 +3227,7 @@
     const W = G.W, sc = escala(), cp = chaoPx();
     const alvos = [];
     for (const v of viloes) if (v.estado === 'livre' || v.estado === 'algemado') alvos.push({ x: v.x, y: v.y - 50, v: v });
-    if (heroi.carrega) alvos.unshift({ x: PRISAO_X, y: -100, prisao: true });
+    if (heroi.carrega) alvos.unshift({ x: prisaoPerto(heroi.x), y: -100, prisao: true });
     const usados = { e: [], d: [] };        // setas do mesmo lado não se tapam umas às outras
     for (const a of alvos) {
       const sx = (a.x - cam.x) * sc;
@@ -3222,7 +3271,7 @@
     for (const ca of casas) if (ca.x + 260 > x0 && ca.x - 260 < x1) casa(c, ca, t);
     for (const p of PLAT) if (p.x + p.w > x0 && p.x < x1) plataforma(c, p);
     if (TORRE_X + 420 > x0 && TORRE_X - 420 < x1) torreTopo(c, t);
-    if (PRISAO_X + 300 > x0 && PRISAO_X - 300 < x1) prisao(c, t);
+    for (const px of PRISOES) if (px + 300 > x0 && px - 300 < x1) prisao(c, t, px);
     for (const p of pinos) if (p.x > x0 && p.x < x1) pino(c, p, t);
     for (const cr of coracoes) if (cr.x > x0 && cr.x < x1) coracao(c, cr, t);
     for (const b of baloes) if (b.x > x0 && b.x < x1) balao(c, b, t);
@@ -3239,9 +3288,9 @@
       HEROIS.forEach(function (d, k) {
         if (k === hi) return;
         const j = k < hi ? k : k - 1;
-        const x = PRISAO_X - 330 + j * 90 + (j >= 2 ? 480 : 0);
+        const x = ultimaPx - 330 + j * 90 + (j >= 2 ? 480 : 0);
         c.save(); c.translate(x, -Math.abs(Math.sin(t * 5 + k)) * 40); c.scale(FIG, FIG);
-        boneco(c, d, { t: t, dir: x < PRISAO_X ? 1 : -1, fase: 0, cima: true, noAr: true });
+        boneco(c, d, { t: t, dir: x < ultimaPx ? 1 : -1, fase: 0, cima: true, noAr: true });
         c.restore();
       });
     }
