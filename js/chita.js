@@ -198,7 +198,7 @@
     cont = { cabra: 0, gazela: 0, outros: 0, especiais: 0, familia: 0, total: 0 };
     stats = { apanhados: [], saltos: 0, sprints: 0, rochas: 0, vigias: 0, especiaisVistos: 0 };
     chita = { x: CH / 2, y: CH / 2, vx: 0, vy: 0, a: -Math.PI / 2, passo: 0, folego: 1, cansada: false, corre: false,
-      salto: 0, saltoCd: 0, h: 0, lingua: 0 };
+      salto: 0, saltoCd: 0, h: 0, lingua: 0, nada: false, parada: 0, bebe: false, gluT: 0, saiT: -10, bebeu: false };
     camX = chita.x; camY = chita.y;
     for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) chunk(i, j);
     // logo ao princípio há gazelas e cabras ali perto
@@ -342,7 +342,8 @@
     const foge = alvo.medo > 0 || alvo.estado === 'rocha';
     const corre = chita.folego > 0.06 && ((foge && d < 650) || d < 280);
     const alinhado = Math.abs(difAng(chita.a, Math.atan2(dy, dx))) < 0.4;
-    const salta = d < 230 && alinhado && chita.saltoCd <= 0 && chita.salto <= 0;
+    let salta = d < 230 && alinhado && chita.saltoCd <= 0 && chita.salto <= 0;
+    if (chita.nada && !naAgua(chita.x + dx / d * 60, chita.y + dy / d * 60) && chita.saltoCd <= 0) salta = true;
     return { ax: dx / d, ay: dy / d, corre: corre, salta: salta };
   }
 
@@ -416,8 +417,33 @@
         c.a += difAng(c.a, alvo) * Math.min(1, dt * 11);
       }
     }
-    c.x += c.vx * dt; c.y += c.vy * dt;
+    // a nadar não se sai da água a andar: para sair, a chita tem de SALTAR 🐾 (pedido do Isaac)
+    let nx = c.x + c.vx * dt, ny = c.y + c.vy * dt;
+    if (agua && c.salto <= 0 && !naAgua(nx, ny)) {
+      if (naAgua(nx, c.y)) { ny = c.y; c.vy = 0; }
+      else if (naAgua(c.x, ny)) { nx = c.x; c.vx = 0; }
+      else { nx = c.x; ny = c.y; c.vx = 0; c.vy = 0; }
+      if (mag > 0.1 && tempo - c.saiT > 6) { c.saiT = tempo; diz('Para sair da água, salta! 🐾'); texto('salta! 🐾', c.x, c.y - 50, '#bde0fe'); }
+    }
+    c.x = nx; c.y = ny;
+    c.nada = c.salto <= 0 && naAgua(c.x, c.y);
     const vel = Math.hypot(c.vx, c.vy);
+    // beber água: parada dentro de água ou mesmo à beirinha, a chita baixa a cabeça e bebe (e o fôlego enche)
+    const fx0 = c.x + Math.cos(c.a) * 62, fy0 = c.y + Math.sin(c.a) * 62;
+    const aBeira = c.nada || naAgua(fx0, fy0) || naAgua(c.x + Math.cos(c.a) * 40, c.y + Math.sin(c.a) * 40);
+    if (c.salto <= 0 && mag < 0.1 && vel < 40 && aBeira) c.parada += dt; else c.parada = 0;
+    c.bebe = c.parada > 0.5;
+    if (c.bebe) {
+      c.folego = Math.min(1, c.folego + 0.5 * dt);
+      if (c.cansada && c.folego >= DIF.CANSADA_ATE) c.cansada = false;
+      c.gluT -= dt;
+      if (c.gluT <= 0) {
+        c.gluT = 0.7;
+        const bx = c.x + Math.cos(c.a) * 58, by = c.y + Math.sin(c.a) * 58;
+        texto('glu', bx, by - 20, '#bde0fe'); salpico(bx, by, 3); sfx('pop');
+      }
+      if (!c.bebeu) { c.bebeu = true; diz('A chita está a beber água! Glu, glu, glu.', true); }
+    } else c.gluT = 0.2;
     c.passo += vel * dt * 0.05;
     c.lingua = Math.max(0, c.lingua - dt);
     if (c.corre && Math.random() < dt * 22) poeira(c.x - Math.cos(c.a) * 34, c.y - Math.sin(c.a) * 34, 1);
@@ -837,9 +863,29 @@
   function desenhaChita(c, ch, t) {
     const h = ch.h, K = 1 + h * 0.4;
     const vel = Math.hypot(ch.vx, ch.vy), amp = Math.min(1, vel / 300), p = ch.passo;
+    const nada = ch.nada;
+    if (nada) {
+      // a nadar: anéis na água à volta e o rasto em V atrás
+      c.save(); c.translate(ch.x, ch.y); c.rotate(ch.a);
+      c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2.5;
+      for (let i = 0; i < 2; i++) {
+        const u = (t * 0.9 + i * 0.5) % 1;
+        c.globalAlpha = 1 - u; c.beginPath(); c.ellipse(4, 0, 46 + u * 26, 20 + u * 14, 0, 0, TAU); c.stroke();
+      }
+      c.globalAlpha = Math.min(1, vel / 120) * 0.7;
+      c.beginPath(); c.moveTo(-30, -12); c.lineTo(-80, -34); c.moveTo(-30, 12); c.lineTo(-80, 34); c.stroke();
+      c.globalAlpha = 1; c.restore();
+    }
+    if (ch.bebe) {
+      // ondinhas onde a língua toca na água
+      const bx = ch.x + Math.cos(ch.a) * 60, by = ch.y + Math.sin(ch.a) * 60;
+      c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { const u = (t * 1.6 + i / 3) % 1; c.globalAlpha = 1 - u; c.beginPath(); c.arc(bx, by, 4 + u * 18, 0, TAU); c.stroke(); }
+      c.globalAlpha = 1;
+    }
     // sombra
     c.save(); c.translate(ch.x + h * 18, ch.y + h * 26); c.rotate(ch.a);
-    c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(0, 0, 50 * (1 - h * 0.2), 19 * (1 - h * 0.2), 0, 0, TAU); c.fill();
+    c.fillStyle = nada ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(0, 0, 50 * (1 - h * 0.2), 19 * (1 - h * 0.2), 0, 0, TAU); c.fill();
     c.restore();
     c.save(); c.translate(ch.x, ch.y - h * 22); c.rotate(ch.a); c.scale(K * (ch.corre ? 1.08 : 1), K * (ch.corre ? 0.94 : 1));
     // a cauda comprida, a abanar, com anéis e a ponta preta
@@ -858,6 +904,7 @@
     // as patas (a galopar)
     const patas = [[20, -13, 0], [20, 13, Math.PI], [-20, -13, Math.PI * 0.5], [-20, 13, Math.PI * 1.5]];
     for (const pt of patas) {
+      if (nada) break;   // a nadar as patas ficam escondidas debaixo de água
       const off = h > 0 ? (pt[0] > 0 ? 10 : -10) : Math.sin(p + pt[2]) * 11 * amp;
       c.fillStyle = '#e09b2d'; c.beginPath(); c.ellipse(pt[0] + off, pt[1] * (h > 0 ? 1.15 : 1), 8, 5, 0, 0, TAU); c.fill();
       c.fillStyle = '#3a2a1a'; c.beginPath(); c.arc(pt[0] + off + 6, pt[1] * (h > 0 ? 1.15 : 1), 1.6, 0, TAU); c.fill();
@@ -868,7 +915,16 @@
     c.fillStyle = '#f7cd6b'; c.beginPath(); c.ellipse(2, 0, 28, 7, 0, 0, TAU); c.fill();
     c.fillStyle = '#1f1a14';
     for (const s of PINTAS) { c.beginPath(); c.arc(s[0], s[1], s[2], 0, TAU); c.fill(); }
-    // a cabeça
+    if (nada) {
+      // a água tapa metade do corpo: só as costas e a cabeça ficam de fora
+      c.fillStyle = 'rgba(70,150,210,.55)';
+      c.beginPath(); c.ellipse(-4, 0, 40, 17, 0, 0, TAU); c.fill();
+      c.fillStyle = '#f4b942'; c.beginPath(); c.ellipse(2, 0, 26, 5, 0, 0, TAU); c.fill();
+      c.fillStyle = '#1f1a14';
+      for (const s of PINTAS) if (Math.abs(s[1]) < 5) { c.beginPath(); c.arc(s[0], s[1], s[2] * 0.8, 0, TAU); c.fill(); }
+    }
+    // a cabeça (a beber, vai mais para a frente, baixinha)
+    if (ch.bebe) c.translate(6, 0);
     c.fillStyle = '#f4b942'; c.strokeStyle = '#c98a1d';
     c.beginPath(); c.arc(41, 0, 14, 0, TAU); c.fill(); c.stroke();
     // orelhas
@@ -887,6 +943,7 @@
       c.beginPath(); c.moveTo(46.5, sy * 8); c.quadraticCurveTo(50, sy * 9.5, 52, sy * 6.5); c.stroke();
     }
     c.fillStyle = '#1f1a14'; c.beginPath(); c.arc(34, -3, 1.6, 0, TAU); c.arc(36, 3, 1.4, 0, TAU); c.fill();
+    if (ch.bebe && Math.sin(t * 14) > 0) { c.fillStyle = '#ff7b9c'; c.beginPath(); c.ellipse(61, 0, 5, 3, 0, 0, TAU); c.fill(); }
     if (ch.lingua > 0) { c.fillStyle = '#ff7b9c'; c.beginPath(); c.ellipse(59, 2, 4, 2.4, 0.3, 0, TAU); c.fill(); }
     c.restore();
   }
@@ -1116,7 +1173,7 @@
       chunks: chunks.size, visitados: visitados.size, livres: livres().length, manadas: manadas.length,
       seguidores: seguidores.length, familia: cont.familia, cabras: cont.cabra, gazelas: cont.gazela, outros: cont.outros,
       especiais: cont.especiais, total: cont.total, folego: +chita.folego.toFixed(2), cansada: chita.cansada,
-      corre: chita.corre, salto: chita.salto > 0, saltoCd: +chita.saltoCd.toFixed(2), piloto: piloto,
+      corre: chita.corre, nada: chita.nada, bebe: chita.bebe, salto: chita.salto > 0, saltoCd: +chita.saltoCd.toFixed(2), piloto: piloto,
       tempo: +tempo.toFixed(1), porMinuto: tempo > 0 ? +(cont.total / tempo * 60).toFixed(1) : 0,
       stats: { saltos: stats.saltos, sprints: stats.sprints, rochas: stats.rochas, vigias: stats.vigias, especiaisVistos: stats.especiaisVistos } };
   };
