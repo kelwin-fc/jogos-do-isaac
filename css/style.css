@@ -173,6 +173,12 @@ body.scene-chita #btnFire,
 body.scene-chita #btnHorn { display: block; }
 body.scene-chita #btnHorn { background: rgba(255, 183, 3, 0.6); }
 body.scene-chita.chita-salto-espera #btnHorn { opacity: 0.4; }
+/* FUTEBOL POKÉMON: move-se a arrastar o dedo; ⚡ chuta ou dá o raio do Pikachu (btnFire) e
+   🌩️ é o super raio (btnHorn), apagadinho enquanto recarrega */
+body.scene-pokebola #btnFire,
+body.scene-pokebola #btnHorn { display: block; }
+body.scene-pokebola #btnHorn { background: rgba(255, 214, 10, 0.6); }
+body.scene-pokebola.pokebola-super-espera #btnHorn { opacity: 0.4; }
 body.scene-mar #btnFire,
 body.scene-mar #btnHorn { display: block; }
 body.scene-mar #btnHorn { background: rgba(76, 201, 240, 0.55); }
@@ -616,6 +622,7 @@ body.splash-on #splash { display: flex; }
 /* Marvel: vermelho e dourado do Homem de Ferro */
 #btnPlayMarvel { background: linear-gradient(#ff5a5f, #b0101c); animation-delay: 4.25s; }
 /* a chita: dourada com pintas pretas */
+#btnPlayPokebola { background: radial-gradient(circle at 50% 50%, #fff 0 9%, #222 10% 13%, transparent 14%), linear-gradient(#ffd60a 0 48%, #222 48% 52%, #3fa34d 52%); }
 #btnPlayChita { background: radial-gradient(circle at 18% 30%, #3b2a12 0 5%, transparent 6%), radial-gradient(circle at 78% 68%, #3b2a12 0 5%, transparent 6%), radial-gradient(circle at 60% 22%, #3b2a12 0 4%, transparent 5%), linear-gradient(#ffd166, #e09f3e); }
 /* Nicole: tijolos de Lego às cores */
 #btnPlayLegos {
