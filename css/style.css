@@ -175,6 +175,11 @@ body.scene-chita #btnHorn { background: rgba(255, 183, 3, 0.6); }
 body.scene-chita.chita-salto-espera #btnHorn { opacity: 0.4; }
 /* FUTEBOL POKÉMON: move-se a arrastar o dedo; ⚡ chuta ou dá o raio do Pikachu (btnFire) e
    🌩️ é o super raio (btnHorn), apagadinho enquanto recarrega */
+/* BULBASAUR MOEDAS: arrastar o dedo para andar; 🍃 folhas (btnFire) e 🌿 chicote de vinha (btnHorn) */
+body.scene-bulbasaur #btnFire,
+body.scene-bulbasaur #btnHorn { display: block; }
+body.scene-bulbasaur #btnHorn { background: rgba(76, 175, 80, 0.6); }
+body.scene-bulbasaur.bulba-chicote-espera #btnHorn { opacity: 0.4; }
 body.scene-pokebola #btnFire,
 body.scene-pokebola #btnHorn { display: block; }
 body.scene-pokebola #btnHorn { background: rgba(255, 214, 10, 0.6); }

@@ -70,16 +70,16 @@
     cur = G.scenes[name];
     if (G.ze) G.ze.entra(name);
     G.audio.tema = name;   // cada jogo tem a sua música (o Star Wars e o Halloween põem a deles no enter)
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-bulbasaur', 'bulba-chicote-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('scene-' + name);
     if (name === 'halloween') document.body.classList.add('scene-starwars');   // os mesmos botões do Star Wars
     const motorDragao = name === 'dragao' || name === 'classico' || name === 'paifilho';   // os dois jogos do motor do Dragão
     document.getElementById('btnFire').textContent =
-      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'rei' ? '🏹' : (name === 'ninjaslego' ? '🔥' : (name === 'dragaorobo' || name === 'casamarvel' ? '🏹' : (name === 'chita' ? '💨' : (name === 'robocarro' || name === 'mar' ? '🔫' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡'))))))))));
+      name === 'castle' ? '🚀' : (motorDragao ? '👟' : (name === 'cobras' ? '💨' : (name === 'mauzoes' ? '🧱' : (name === 'robos' ? '🕸️' : (name === 'rei' ? '🏹' : (name === 'ninjaslego' ? '🔥' : (name === 'dragaorobo' || name === 'casamarvel' ? '🏹' : (name === 'chita' ? '💨' : (name === 'bulbasaur' ? '🍃' : (name === 'robocarro' || name === 'mar' ? '🔫' : (name === 'starwars' || name === 'halloween' ? '🔫' : '⚡')))))))))));
     // o Egito usa a buzina como ARCO, o Dragão e o Clássico como PASSE e as Cobras
     // como FESTA; nos outros jogos ela volta a ser buzina
     document.getElementById('btnHorn').textContent =
-      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'ninjaslego' ? '🌀' : (name === 'dragaorobo' ? '✨' : (name === 'robocarro' ? '💥' : (name === 'mar' ? '🐋' : (name === 'casamarvel' ? '💥' : (name === 'chita' ? '🐾' : (name === 'pokebola' ? '🌩️' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯'))))))))))))));
+      name === 'egito' ? '🏹' : (motorDragao ? '🤝' : (name === 'cobras' ? '🎉' : (name === 'marvel' ? '🦸' : (name === 'mauzoes' ? '🤝' : (name === 'ash' ? '🔄' : (name === 'robos' ? '👊' : (name === 'ninjaslego' ? '🌀' : (name === 'dragaorobo' ? '✨' : (name === 'robocarro' ? '💥' : (name === 'mar' ? '🐋' : (name === 'casamarvel' ? '💥' : (name === 'chita' ? '🐾' : (name === 'pokebola' ? '🌩️' : (name === 'bulbasaur' ? '🌿' : (name === 'starwars' || name === 'halloween' ? '✋' : '📯')))))))))))))));
     // no jogo do Pikachu o botão da porta é a bola de campo de força
     document.getElementById('btnChama').textContent = '🙋';   // o Star Wars troca-o por 🔄 lá fora
     document.getElementById('btnDoor').textContent = name === 'ash' ? '🛡️' : (name === 'robos' ? '💥' : '🚪');
@@ -90,7 +90,7 @@
     cur = null;
     G.audio.tema = null;
     if (G.ze) G.ze.entra(null);
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-bulbasaur', 'bulba-chicote-espera', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('splash-on');
     if (G.audio.engineSet) G.audio.engineSet(0);
     if (G.audio.cala) G.audio.cala();   // a voz (Legos, Marvel) não fica a falar no menu
@@ -326,6 +326,7 @@
   document.getElementById('btnPlayCobras').addEventListener('click', function () { startGame('cobras'); });
   document.getElementById('btnPlayPaiFilho').addEventListener('click', function () { startGame('paifilho'); });
   document.getElementById('btnPlayChita').addEventListener('click', function () { startGame('chita'); });
+  document.getElementById('btnPlayBulbasaur').addEventListener('click', function () { startGame('bulbasaur'); });
   document.getElementById('btnPlayPokebola').addEventListener('click', function () { startGame('pokebola'); });
   document.getElementById('btnPlayCasaMarvel').addEventListener('click', function () { startGame('casamarvel'); });
   document.getElementById('btnPlayMar').addEventListener('click', function () { startGame('mar'); });
@@ -353,7 +354,7 @@
     { id: 'herois', nome: 'HERÓIS', ic: '🦸', cor: 'linear-gradient(#ff5a5f, #8d0a14)',
       jogos: ['btnPlayMarvel', 'btnPlayCasaMarvel', 'btnPlayMauzoes', 'btnPlayRobos', 'btnPlayNinjasLego', 'btnPlayNinja'] },
     { id: 'aventuras', nome: 'AVENTURAS', ic: '🚀', cor: 'linear-gradient(#7b7ff2, #2b2d7a)',
-      jogos: ['btnPlayStarWars', 'btnPlayHalloween', 'btnPlayRei', 'btnPlayDragaoRobo', 'btnPlayRoboCarro', 'btnPlayEgito', 'btnPlayFly', 'btnPlayCastle'] },
+      jogos: ['btnPlayBulbasaur', 'btnPlayStarWars', 'btnPlayHalloween', 'btnPlayRei', 'btnPlayDragaoRobo', 'btnPlayRoboCarro', 'btnPlayEgito', 'btnPlayFly', 'btnPlayCastle'] },
     { id: 'animais', nome: 'ANIMAIS', ic: '🐆', cor: 'linear-gradient(#9ae66e, #1f7a3a)',
       jogos: ['btnPlayChita', 'btnPlayMar', 'btnPlayCobras', 'btnPlayMorcegos', 'btnPlayViuvas', 'btnPlayPokemon', 'btnPlayAsh'] },
     { id: 'desporto', nome: 'FUTEBOL E CARROS', ic: '⚽', cor: 'linear-gradient(#5b9bff, #0b3ea8)',
