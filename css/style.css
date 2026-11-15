@@ -175,6 +175,8 @@ body.scene-chita #btnHorn { background: rgba(255, 183, 3, 0.6); }
 body.scene-chita.chita-salto-espera #btnHorn { opacity: 0.4; }
 /* FUTEBOL POKÉMON: move-se a arrastar o dedo; ⚡ chuta ou dá o raio do Pikachu (btnFire) e
    🌩️ é o super raio (btnHorn), apagadinho enquanto recarrega */
+/* BOWLING A TRÊS: só o 🎳 (btnFire); também se pode tocar no ecrã */
+body.scene-bowling #btnFire { display: block; }
 /* MINA DOS BRILHANTES: ◀ ▶ ⬆, ⛏️ parte para a frente (btnFire) e ⬇️ parte para baixo (btnHorn, por cima do ◀) */
 body.scene-mina #btnLeft,
 body.scene-mina #btnRight,
