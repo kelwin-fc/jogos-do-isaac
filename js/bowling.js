@@ -27,10 +27,15 @@
   };
   const LANE = 50, VALETA = 64, FIM = 1010, BR = 10, PR = 5;
   const JOG = [
-    { ic: '🐯', cor: '#e63946', nome: 'o tigre' },
-    { ic: '🐸', cor: '#2a9d8f', nome: 'a rã' },
-    { ic: '🐧', cor: '#4361ee', nome: 'o pinguim' }
+    { ic: '🐯', cor: '#e63946', nome: 'Isaac' },
+    { ic: '🐸', cor: '#2a9d8f', nome: 'Pai' },
+    { ic: '🐧', cor: '#4361ee', nome: 'Amigo' }
   ];
+  // os nomes escrevem-se no início e ficam guardados para a próxima vez
+  try {
+    const guardados = JSON.parse(localStorage.getItem('isaacBowlingNomes') || 'null');
+    if (guardados) guardados.forEach(function (n, i) { if (JOG[i] && n) JOG[i].nome = String(n).slice(0, 12); });
+  } catch (e) { /* sem armazenamento */ }
 
   let pinos, bola, fase, faseT, quem, ronda, lanc, placar, mira, ang, forca, osc, camY, msg, parts, vencedor, primeira, tempo;
 
@@ -54,20 +59,72 @@
     mira = 0; ang = 0; forca = 0;
   }
 
-  function comeca() {
+  function comeca(calado) {
     quem = 0; ronda = 1; lanc = 1; vencedor = null; primeira = true;
     placar = JOG.map(function () { return { rondas: [], total: 0 }; });
     parts = [];
     poePinos(); novaBola();
-    anuncia();
+    if (!calado) anuncia();
   }
 
   function anuncia() {
-    banner(JOG[quem].ic + ' Vez ' + (quem === 0 ? 'do tigre' : quem === 1 ? 'da rã' : 'do pinguim') + '! Ronda ' + ronda + '/' + DIF.RONDAS, 2000);
+    banner('Vez: ' + JOG[quem].ic + ' ' + JOG[quem].nome + '! Ronda ' + ronda + '/' + DIF.RONDAS, 2000);
     fala('Agora joga ' + JOG[quem].nome + '!');
   }
 
-  S.enter = function () { tempo = 0; comeca(); };
+  /* ---------- ecrã dos nomes ---------- */
+  let caixa = null;
+  function tiraNomes() { if (caixa) { caixa.remove(); caixa = null; } }
+  function pedeNomes() {
+    tiraNomes();
+    fase = 'nomes';
+    caixa = document.createElement('div');
+    caixa.id = 'bowlNomes';
+    caixa.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:40;background:rgba(10,8,30,0.72);font-family:system-ui,sans-serif';
+    let html = '<div style="background:#1d1b3a;border:3px solid #ffd60a;border-radius:22px;padding:18px 20px;width:min(90vw,380px);box-shadow:0 10px 40px #000a;text-align:center">' +
+      '<div style="font-size:30px;margin-bottom:10px;color:#fff;font-weight:bold">🎳 Quem joga?</div>';
+    JOG.forEach(function (j, i) {
+      html += '<label style="display:flex;align-items:center;gap:10px;margin:8px 0;background:' + j.cor + ';border-radius:14px;padding:6px 10px">' +
+        '<span style="font-size:34px">' + j.ic + '</span>' +
+        '<input data-i="' + i + '" maxlength="12" value="' + j.nome.replace(/"/g, '') + '" style="flex:1;min-width:0;font-size:22px;font-weight:bold;padding:8px 10px;border:none;border-radius:10px;background:#fff;color:#222">' +
+        '</label>';
+    });
+    html += '<button id="bowlJogar" style="margin-top:12px;font-size:26px;font-weight:bold;padding:12px 30px;border:none;border-radius:16px;background:#ffd60a;color:#222;cursor:pointer">▶ JOGAR</button></div>';
+    caixa.innerHTML = html;
+    document.body.appendChild(caixa);
+    // as letras vão para a caixa, não para o jogo (o B e o espaço são botões do jogo)
+    caixa.addEventListener('keydown', function (e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') joga();
+    });
+    caixa.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    caixa.querySelector('#bowlJogar').addEventListener('click', joga);
+    function joga() {
+      const nomes = [];
+      caixa.querySelectorAll('input').forEach(function (inp) {
+        const i = +inp.dataset.i;
+        const n = inp.value.trim().slice(0, 12);
+        if (n) JOG[i].nome = n;
+        nomes[i] = JOG[i].nome;
+      });
+      try { localStorage.setItem('isaacBowlingNomes', JSON.stringify(nomes)); } catch (e) { /* sem armazenamento */ }
+      tiraNomes();
+      if (G.input && G.input.tap) G.input.tap = null;
+      comeca();
+    }
+  }
+
+  S.enter = function () {
+    tempo = 0;
+    if (!S._gm && G.goMenu) {          // ao voltar ao menu tira-se a caixa dos nomes
+      const gm = G.goMenu;
+      G.goMenu = function () { tiraNomes(); return gm.apply(this, arguments); };
+      S._gm = true;
+    }
+    comeca(true);      // por trás da caixa já se vê a pista
+    pedeNomes();
+  };
+  S.api_nomes = function (l) { l.forEach(function (n, i) { JOG[i].nome = n; }); tiraNomes(); comeca(); };
 
   /* ---------- update ---------- */
   S.update = function (dt, t) {
@@ -76,7 +133,9 @@
     const toque = In.justPressed('fire') || !!In.tap;
     const v = vel();
 
-    if (fase === 'mira') {
+    if (fase === 'nomes') {
+      // à espera dos nomes
+    } else if (fase === 'mira') {
       osc += dt * DIF.MIRA_V * v * Math.PI;
       mira = Math.sin(osc) * (LANE - BR - 2);
       bola.x = mira;
@@ -235,8 +294,8 @@
     const top = placar[ord[0]].total;
     const empate = ord.filter(function (i) { return placar[i].total === top; });
     sfx('tada'); festa();
-    if (empate.length > 1) { banner('🏆 Empate! ' + empate.map(function (i) { return JOG[i].ic; }).join(' '), 3500); fala('Empate! Que jogo!'); }
-    else { banner('🏆 Ganhou ' + JOG[ord[0]].ic + '!', 3500); fala('Ganhou ' + JOG[ord[0]].nome + '!'); }
+    if (empate.length > 1) { banner('🏆 Empate! ' + empate.map(function (i) { return JOG[i].ic + ' ' + JOG[i].nome; }).join(' e '), 3500); fala('Empate! Que jogo!'); }
+    else { banner('🏆 Ganhou ' + JOG[ord[0]].ic + ' ' + JOG[ord[0]].nome + '!', 3500); fala('Ganhou ' + JOG[ord[0]].nome + '!'); }
     if (G.addStars) G.addStars(5);
     if (G.ze && G.ze.diz) G.ze.diz('Que jogo!');
   }
@@ -387,18 +446,24 @@
 
   function placarDesenha(c, t) {
     const W = PW;
-    const cw = 30, x0 = Math.max(70, (W - (60 + DIF.RONDAS * cw + 56)) / 2), y0 = 8, rh = 30;
+    const cw = 30, NW = 70, larg = 60 + NW + DIF.RONDAS * cw + 62;
+    // em ecrãs estreitos o placar desce para baixo dos botões 🏠 e 🔊
+    const estreito = W < larg + 200;
+    const x0 = estreito ? Math.max(10, (W - larg) / 2 + 6) : Math.max(64, (W - larg) / 2 + 6), y0 = estreito ? 76 : 8, rh = 30;
     c.save();
     c.fillStyle = 'rgba(0,0,0,0.5)';
-    c.fillRect(x0 - 6, y0 - 4, 60 + DIF.RONDAS * cw + 62, rh * 3 + 8);
+    c.fillRect(x0 - 6, y0 - 4, 60 + NW + DIF.RONDAS * cw + 62, rh * 3 + 8);
     c.textAlign = 'center'; c.textBaseline = 'middle';
     for (let j = 0; j < 3; j++) {
       const y = y0 + j * rh + rh / 2;
-      if (j === quem && fase !== 'fim') { c.fillStyle = 'rgba(255,214,10,0.3)'; c.fillRect(x0 - 4, y - rh / 2 + 1, 60 + DIF.RONDAS * cw + 58, rh - 2); }
+      if (j === quem && fase !== 'fim') { c.fillStyle = 'rgba(255,214,10,0.3)'; c.fillRect(x0 - 4, y - rh / 2 + 1, 60 + NW + DIF.RONDAS * cw + 58, rh - 2); }
       c.fillStyle = JOG[j].cor; c.fillRect(x0, y - 10, 6, 20);
       c.font = '20px system-ui'; c.fillText(JOG[j].ic, x0 + 26, y);
+      c.textAlign = 'left'; c.fillStyle = '#fff'; c.font = 'bold 13px system-ui';
+      let nm = JOG[j].nome; while (nm.length > 1 && c.measureText(nm).width > NW - 6) nm = nm.slice(0, -1);
+      c.fillText(nm, x0 + 42, y); c.textAlign = 'center';
       for (let r = 0; r < DIF.RONDAS; r++) {
-        const x = x0 + 52 + r * cw;
+        const x = x0 + 52 + NW + r * cw;
         c.strokeStyle = 'rgba(255,255,255,0.3)'; c.strokeRect(x, y - 12, cw - 4, 24);
         const ro = placar[j].rondas[r];
         if (ro) {
@@ -408,7 +473,7 @@
         }
       }
       c.fillStyle = '#fff'; c.font = 'bold 18px system-ui';
-      c.fillText('' + placar[j].total, x0 + 52 + DIF.RONDAS * cw + 24, y);
+      c.fillText('' + placar[j].total, x0 + 52 + NW + DIF.RONDAS * cw + 24, y);
     }
     c.restore();
   }
@@ -424,7 +489,8 @@
       c.fillStyle = JOG[j].cor; c.fillRect(x - 50, base - alt[k], 100, alt[k]);
       c.fillStyle = '#fff'; c.font = 'bold 34px system-ui'; c.fillText('' + (k + 1), x, base - alt[k] / 2);
       c.font = '56px system-ui'; c.fillText(JOG[j].ic, x, base - alt[k] - 40 + (k === 0 ? Math.sin(t * 5) * 8 : 0));
-      c.font = 'bold 22px system-ui'; c.fillText(placar[j].total + ' pts', x, base + 22);
+      c.font = 'bold 20px system-ui'; c.fillText(JOG[j].nome, x, base + 20);
+      c.font = 'bold 18px system-ui'; c.fillText(placar[j].total + ' pts', x, base + 44);
       if (k === 0) { c.font = '44px system-ui'; c.fillText('🏆', x, base - alt[k] - 100); }
     }
     if (faseT <= 0) { c.fillStyle = '#fff'; c.font = 'bold 22px system-ui'; c.fillText('🎳 Toca para jogar outra vez', W / 2, H * 0.9); }

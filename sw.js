@@ -6,7 +6,7 @@
    - Imagens dos Pokémon (PokeAPI): guardam-se à medida que aparecem, para os
      Pokémon que já saíram também se verem sem internet.
    Ao acrescentar um ficheiro .js novo ao jogo, juntá-lo à lista JOGO. */
-const CACHE = 'jogos-isaac-v6';
+const CACHE = 'jogos-isaac-v7';
 const IMAGENS = 'jogos-isaac-pokemon-v1';
 const JOGO = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
@@ -20,6 +20,7 @@ const JOGO = [
   'js/mar.js',
   'js/casamarvel.js',
   'js/chita.js',
+  'js/lobinhos.js',
   'js/pokebola.js',
   'js/bulbasaur.js',
   'js/mina.js',
