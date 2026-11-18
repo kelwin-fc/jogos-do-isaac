@@ -126,6 +126,38 @@
         }
       }
     },
+    // a Menina Laser (pedido do Isaac, 2026-11-18): rabo-de-cavalo cor-de-rosa, fita azul com
+    // um raio na testa, e SEMPRE um pau elétrico em cada mão, a faiscar
+    laser: {
+      ambas: true,
+      cabeca: function (c, o) {
+        const bal = Math.sin((o.t || 0) * 6 + (o.fase || 0)) * 2 + (o.anda ? 3 : 0);
+        c.fillStyle = '#ff4fa3';
+        rr(c, -8.8, -70.5, 17.6, 7, 3); c.fill();                       // o cabelo por cima
+        c.beginPath(); c.moveTo(-8.6, -66); c.quadraticCurveTo(-17 - bal, -64, -15 - bal, -50);   // o rabo-de-cavalo
+        c.quadraticCurveTo(-12 - bal * 0.5, -56, -8, -60); c.closePath(); c.fill();
+        c.fillRect(-9, -66, 2.6, 9);                                    // franja do lado
+        c.fillStyle = '#00b4d8'; c.fillRect(-8.6, -65.5, 17.2, 2.2);    // a fita
+        c.fillStyle = '#ffd60a';
+        c.beginPath(); c.moveTo(1.5, -67.5); c.lineTo(-0.8, -64.3); c.lineTo(0.8, -64.3); c.lineTo(-0.6, -61.6);
+        c.lineTo(2.6, -65); c.lineTo(1, -65); c.closePath(); c.fill();
+      },
+      peito: function (c) {
+        c.fillStyle = '#00b4d8';
+        c.beginPath(); c.moveTo(2, -47); c.lineTo(-4, -38); c.lineTo(0, -38); c.lineTo(-3, -30);
+        c.lineTo(5, -41); c.lineTo(1, -41); c.lineTo(4, -47); c.closePath(); c.fill();
+      },
+      mao: function (c, o) {
+        // o pau elétrico, sempre na mão, com faíscas azuis
+        c.fillStyle = '#2b2d42'; rr(c, -1.8, 14, 3.6, 18, 1.5); c.fill();
+        c.fillStyle = '#90e0ef'; rr(c, -2.2, 29, 4.4, 5, 2); c.fill();
+        c.strokeStyle = 'rgba(144,224,239,.9)'; c.lineWidth = 0.9;
+        const tt = (o.t || 0) * 30;
+        c.beginPath(); c.moveTo(0, 31);
+        for (let i = 1; i <= 3; i++) c.lineTo(Math.sin(tt + i * 2.1) * 3.5, 31 + i * 2.6);
+        c.stroke();
+      }
+    },
     // a Pantera Negra (pedido do Isaac, 2026-11-07): capacete preto com orelhas de gato,
     // olhos prateados, o colar de garras e as garras na mão
     pantera: {
@@ -460,7 +492,7 @@
       c.beginPath(); c.arc(0, 18.5, 4.3, 0, TAU); c.fill();
       c.fillStyle = sombra(d.maos || AMARELO_LEGO, -0.3);
       c.beginPath(); c.arc(0, 19.8, 1.6, 0, TAU); c.fill();
-      if (lado > 0 && det.mao && !o.algemas) det.mao(c, o);
+      if ((lado > 0 || det.ambas) && det.mao && !o.algemas) det.mao(c, o);
       if (o.algemas) {
         c.strokeStyle = '#adb5bd'; c.lineWidth = 1.5;
         c.beginPath(); c.arc(0, 18, 3.6, 0, TAU); c.stroke();
@@ -531,7 +563,10 @@
       pele: '#5fb041', tronco: '#5fb041', bracos: '#5fb041', maos: '#5fb041', pernas: '#6a3d9a', ancas: '#6a3d9a', pes: '#5fb041' },
     // a Pantera Negra dá um salto rápido em frente com as garras (energia roxa)
     { id: 'pantera', nome: 'Pantera Negra', poder: 'garras', vel: 385, salto: 920, cd: 0.5, semRosto: true,
-      pele: '#16161d', tronco: '#1c1c26', bracos: '#1c1c26', maos: '#1c1c26', pernas: '#1c1c26', ancas: '#2b2b3a', pes: '#2b2b3a' }
+      pele: '#16161d', tronco: '#1c1c26', bracos: '#1c1c26', maos: '#1c1c26', pernas: '#1c1c26', ancas: '#2b2b3a', pes: '#2b2b3a' },
+    // a Menina Laser: de longe dispara raios laser; ao pé dá com os paus elétricos
+    { id: 'laser', nome: 'Menina Laser', poder: 'laser', vel: 370, salto: 880, cd: 0.32,
+      tronco: '#7b2cbf', bracos: '#7b2cbf', pernas: '#3c096c', ancas: '#00b4d8', pes: '#00b4d8' }
   ];
   const VILOES = [
     { id: 'loki', nome: 'Loki', tiro: 'magia', cor: '#52b788', expr: 'mau', capa: '#2e7d32',
@@ -825,6 +860,30 @@
       if (!h.noChao) { h.vy = 1500; h.pisao = true; h.cd = 0.2; return; }
       smash();
       h.cd = d.cd;
+    } else if (d.poder === 'laser') {
+      const perto = alvoMaisPerto(h.x, my, h.dir, 200);
+      if (perto) {
+        // paus elétricos: zás em todos os que estão mesmo à frente
+        for (const v of inimigos()) {
+          if (!atacavel(v)) continue;
+          const dx = (v.x - h.x) * h.dir;
+          if (dx > -40 && dx < 210 && Math.abs(centroY(v) - my) < 130 * (v.def.grande || 1)) {
+            acerta(v, h.dir);
+            raios.push({ x1: mx, y1: my, x2: v.x, y2: centroY(v), t: 0, seg: raioZig(mx, my, v.x, centroY(v)), cor: 'eletrico' });
+            faisca(v.x, centroY(v), '#90e0ef', 10);
+          }
+        }
+        sfx('zap'); G.shake = Math.max(G.shake, 0.08);
+        h.cd = d.cd + 0.1;
+      } else {
+        // raio laser, direitinho e muito rápido, ao mau mais perto à frente
+        const alvo = alvoMaisPerto(mx, my, h.dir, 900);
+        const tx = alvo ? alvo.x : mx + h.dir * 650, ty = alvo ? centroY(alvo) : my;
+        raios.push({ x1: mx, y1: my, x2: tx, y2: ty, t: 0, seg: [[mx, my], [tx, ty]], cor: 'laser' });
+        if (alvo) { acerta(alvo, h.dir); faisca(tx, ty, '#ff4fa3', 8); }
+        sfx('repulsor');
+        h.cd = d.cd;
+      }
     } else if (d.poder === 'garras') {
       // um pulo rápido em frente: as garras apanham quem estiver no caminho
       h.vx = h.dir * 1100; h.impulso = 0.2; h.garraT = 0.3;
@@ -1232,6 +1291,10 @@
       raios.push({ x1: mx, y1: my - 30, x2: alvo.x, y2: centroY(alvo), t: 0, seg: raioZig(mx, my - 30, alvo.x, centroY(alvo)) });
       acerta(alvo, a.dir);
       sfx('trovao');
+    } else if (d.poder === 'laser') {
+      raios.push({ x1: mx, y1: my, x2: alvo.x, y2: centroY(alvo), t: 0, seg: [[mx, my], [alvo.x, centroY(alvo)]], cor: 'laser' });
+      acerta(alvo, a.dir);
+      sfx('repulsor');
     } else if (d.poder === 'garras') {
       sfx('whoosh');
       acerta(alvo, a.dir);
@@ -3297,7 +3360,9 @@
     for (const tr of tiros) tiroBom(c, tr);
     for (const tr of tirosMaus) tiroMau(c, tr);
     for (const r of raios) {
-      c.strokeStyle = 'rgba(189,224,254,' + (1 - r.t / 0.28) + ')'; c.lineWidth = 9; c.lineJoin = 'round';
+      const al = 1 - r.t / 0.28;
+      c.strokeStyle = r.cor === 'laser' ? 'rgba(255,79,163,' + al + ')' : (r.cor === 'eletrico' ? 'rgba(0,180,216,' + al + ')' : 'rgba(189,224,254,' + al + ')');
+      c.lineWidth = r.cor === 'laser' ? 11 : 9; c.lineJoin = 'round';
       c.beginPath(); r.seg.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke();
       c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
     }
