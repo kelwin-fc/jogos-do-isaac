@@ -6,7 +6,7 @@
 (function () {
   window.G = window.G || {};
 
-  const FORA = { legos: true };            // jogos onde o Zé não aparece
+  const FORA = { legos: true, marvel: true };   // jogos onde o Zé não aparece (Marvel: pedido do Isaac, 2026-11-18)
   const OLA = ['Olá! Sou o Zé, vou contigo!', 'Vou já, Isaac! Espera por mim!', 'O Zé também quer jogar!'];
   const BOAS = ['Boa, Isaac e Zé!', 'Que boa!', 'Vou já!', 'Que boa, Zé!', 'Boa, Isaac!', 'Uau! Que boa!', 'Vou já, vou já!', 'Isso! Boa!', 'Somos os maiores!'];
   const ESPERA = 14;                        // segundos, no mínimo, entre duas falas do Zé
