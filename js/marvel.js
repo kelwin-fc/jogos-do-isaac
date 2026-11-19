@@ -1184,8 +1184,13 @@
       }
       mesas.push({ lug: lug, com: com });
     }
+    // à nossa mesa senta-se um vilão, mas é nosso amigo (pedido do Isaac): de preferência um
+    // dos que já apanhámos, a sorrir, e também lhe trazem comida
+    const lista = presos.length ? presos.map(function (v) { return v.def; }) : VILOES;
+    const vd = lista[Math.floor(Math.random() * lista.length)];
+    const amigo = { def: Object.assign({}, vd, { expr: 'feliz' }), com: PRATOS[Math.floor(Math.random() * PRATOS.length)], fase: rnd(0, TAU) };
     dentro = {
-      t: 0, fase: 'entra', mesas: mesas, chef: { fase: 'fogao', t: 0 },
+      t: 0, fase: 'entra', mesas: mesas, amigo: amigo, chef: { fase: 'fogao', t: 0 },
       prato: null, come: null, espera: 0.5, n: 0, prox: Math.floor(Math.random() * PRATOS.length)
     };
     document.body.classList.add('marvel-dentro');
@@ -3630,6 +3635,7 @@
       let quem = null, braco = 0;
       if (minha) {
         if (j === 0 && D.fase !== 'entra') { quem = defHeroi(); braco = D.come ? 0.65 + Math.sin(t * 18) * 0.35 : 0; }
+        if (j === 1 && D.amigo) { quem = D.amigo.def; braco = Math.max(0, Math.sin(t * 2.6 + D.amigo.fase)) * 0.7; }
       } else if (info.lug[j]) {
         quem = info.lug[j].def; braco = Math.max(0, Math.sin(t * 2.2 + info.lug[j].fase)) * 0.7;
       }
@@ -3648,8 +3654,13 @@
       let tipo = null, kk = 0.55;
       if (minha) {
         if (j === 0 && D.prato) { tipo = D.prato.tipo; if (D.come) kk *= 1 - D.come.t * 0.8; }
+        if (j === 1 && D.amigo) tipo = D.amigo.com;
       } else if (info.lug[j]) tipo = info.com[j];
       if (tipo) desenhaComida(c, tipo, sx, -30 - 20 * kk, kk);
+    }
+    if (minha && D.amigo) {                    // um coraçãozinho por cima do vilão amigo
+      const hy = -96 * (D.amigo.def.grande || 1) + Math.sin(t * 3) * 3;
+      G.gfx.heart ? G.gfx.heart(c, 34, hy, 9, '#ff4d6d') : (c.fillStyle = '#ff4d6d', c.font = '16px sans-serif', c.textAlign = 'center', c.fillText('❤', 34, hy));
     }
     if (minha && D.prato && !D.come) {          // o prato "chama": toca aqui para comer
       const p = 0.5 + Math.sin(t * 6) * 0.4;

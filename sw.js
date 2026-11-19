@@ -22,6 +22,7 @@ const JOGO = [
   'js/chita.js',
   'js/lobinhos.js',
   'js/pokebola.js',
+  'js/corridamarvel.js',
   'js/bulbasaur.js',
   'js/mina.js',
   'js/bowling.js',

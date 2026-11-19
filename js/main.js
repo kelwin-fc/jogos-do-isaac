@@ -70,7 +70,7 @@
     cur = G.scenes[name];
     if (G.ze) G.ze.entra(name);
     G.audio.tema = name;   // cada jogo tem a sua música (o Star Wars e o Halloween põem a deles no enter)
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-lobinhos', 'lobos-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-bulbasaur', 'bulba-chicote-espera', 'scene-mina', 'scene-bowling', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-dentro', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-lobinhos', 'lobos-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-bulbasaur', 'bulba-chicote-espera', 'scene-mina', 'scene-bowling', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-dentro', 'scene-corridamarvel', 'cm-porta', 'cm-dentro', 'cm-horn-espera', 'cm-turbo-vazio', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('scene-' + name);
     if (name === 'halloween') document.body.classList.add('scene-starwars');   // os mesmos botões do Star Wars
     const motorDragao = name === 'dragao' || name === 'classico' || name === 'paifilho';   // os dois jogos do motor do Dragão
@@ -90,7 +90,7 @@
     cur = null;
     G.audio.tema = null;
     if (G.ze) G.ze.entra(null);
-    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-lobinhos', 'lobos-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-bulbasaur', 'bulba-chicote-espera', 'scene-mina', 'scene-bowling', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-dentro', 'marvel-campo-espera', 'ash-dentro');
+    document.body.classList.remove('scene-flight', 'scene-jungle', 'scene-parachute', 'scene-castle', 'scene-futebol', 'scene-escape', 'scene-carros', 'scene-barbie', 'scene-ninja', 'scene-morcegos', 'scene-damas', 'scene-viuvas', 'scene-pista', 'scene-egito', 'scene-dragao', 'scene-classico', 'scene-paifilho', 'scene-robocarro', 'robocarro-especial-espera', 'scene-mar', 'mar-orca-espera', 'scene-casamarvel', 'casa-especial-espera', 'scene-chita', 'chita-salto-espera', 'scene-lobinhos', 'lobos-salto-espera', 'scene-pokebola', 'pokebola-super-espera', 'scene-bulbasaur', 'bulba-chicote-espera', 'scene-mina', 'scene-bowling', 'scene-cobras', 'scene-legos', 'scene-marvel', 'scene-mauzoes', 'scene-pokemon', 'scene-ash', 'ash-campo-espera', 'scene-robos', 'robos-super', 'scene-starwars', 'scene-halloween', 'scene-rei', 'rei-corneta-espera', 'scene-ninjaslego', 'nl-super-espera', 'scene-dragaorobo', 'dr-ia-espera', 'dr-carro', 'sw-dentro', 'sw-forca-espera', 'sw-pe', 'walking', 'picking', 'cacador', 'marvel-porta', 'marvel-dentro', 'scene-corridamarvel', 'cm-porta', 'cm-dentro', 'cm-horn-espera', 'cm-turbo-vazio', 'marvel-campo-espera', 'ash-dentro');
     document.body.classList.add('splash-on');
     if (G.audio.engineSet) G.audio.engineSet(0);
     if (G.audio.cala) G.audio.cala();   // a voz (Legos, Marvel) não fica a falar no menu
@@ -332,6 +332,7 @@
   document.getElementById('btnPlayBulbasaur').addEventListener('click', function () { startGame('bulbasaur'); });
   document.getElementById('btnPlayPokebola').addEventListener('click', function () { startGame('pokebola'); });
   document.getElementById('btnPlayCasaMarvel').addEventListener('click', function () { startGame('casamarvel'); });
+  document.getElementById('btnPlayCorridaMarvel').addEventListener('click', function () { startGame('corridamarvel'); });
   document.getElementById('btnPlayMar').addEventListener('click', function () { startGame('mar'); });
   document.getElementById('btnPlayRoboCarro').addEventListener('click', function () { startGame('robocarro'); });
   document.getElementById('btnPlayClassico').addEventListener('click', function () { startGame('classico'); });
@@ -355,7 +356,7 @@
      se veem. Um jogo novo tem de entrar numa das listas (senão vai para "Mais jogos"). */
   const CATEGORIAS = [
     { id: 'herois', nome: 'HERÓIS', ic: '🦸', cor: 'linear-gradient(#ff5a5f, #8d0a14)',
-      jogos: ['btnPlayMarvel', 'btnPlayCasaMarvel', 'btnPlayMauzoes', 'btnPlayRobos', 'btnPlayNinjasLego', 'btnPlayNinja'] },
+      jogos: ['btnPlayCorridaMarvel', 'btnPlayMarvel', 'btnPlayCasaMarvel', 'btnPlayMauzoes', 'btnPlayRobos', 'btnPlayNinjasLego', 'btnPlayNinja'] },
     { id: 'aventuras', nome: 'AVENTURAS', ic: '🚀', cor: 'linear-gradient(#7b7ff2, #2b2d7a)',
       jogos: ['btnPlayMina', 'btnPlayBulbasaur', 'btnPlayStarWars', 'btnPlayHalloween', 'btnPlayRei', 'btnPlayDragaoRobo', 'btnPlayRoboCarro', 'btnPlayEgito', 'btnPlayFly', 'btnPlayCastle'] },
     { id: 'animais', nome: 'ANIMAIS', ic: '🐆', cor: 'linear-gradient(#9ae66e, #1f7a3a)',

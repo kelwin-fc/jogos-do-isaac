@@ -335,6 +335,24 @@ body.scene-marvel.marvel-porta #btnDoor {
     bottom: calc(232px + env(safe-area-inset-bottom));
   }
 }
+/* CORRIDA DA MARVEL: ◀ ▶ ⬆, ⚡ turbo/poder (btnFire), 🦸/💥 (btnHorn, por cima do ◀) e a
+   porta 🚪/😴 (btnDoor) só quando o herói está à frente de uma; lá dentro só ⚡ e 🚪 */
+body.scene-corridamarvel #btnLeft,
+body.scene-corridamarvel #btnRight,
+body.scene-corridamarvel #btnJump,
+body.scene-corridamarvel #btnFire { display: block; }
+body.scene-corridamarvel #btnHorn {
+  display: block;
+  bottom: calc(126px + env(safe-area-inset-bottom));
+  background: rgba(230, 57, 70, 0.55);
+}
+body.scene-corridamarvel.cm-horn-espera #btnHorn,
+body.scene-corridamarvel.cm-turbo-vazio #btnFire { opacity: 0.4; }
+body.scene-corridamarvel.cm-porta #btnDoor { display: block; }
+body.scene-corridamarvel.cm-dentro #btnLeft,
+body.scene-corridamarvel.cm-dentro #btnRight,
+body.scene-corridamarvel.cm-dentro #btnJump,
+body.scene-corridamarvel.cm-dentro #btnHorn { display: none; }
 /* 🙋 chamar os Vingadores (por cima do ▶) e 🛡️ campo de força (ao lado do ⬆);
    o campo fica apagadinho enquanto está ligado ou a recarregar */
 body.scene-marvel #btnChama {
