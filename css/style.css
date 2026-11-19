@@ -217,6 +217,17 @@ body.scene-casamarvel #btnHorn {
   background: rgba(155, 93, 229, 0.6);
 }
 body.scene-casamarvel.casa-especial-espera #btnHorn { opacity: 0.4; }
+/* o arco em dois toques: ✋ puxa (btnFire) e 🏹 solta (btnDoor, ao lado do ✋; ao alto vai para cima, ao lado do ⬆) */
+body.scene-casamarvel #btnDoor {
+  display: block;
+  right: calc(122px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  width: 92px; height: 92px; font-size: 44px;
+  background: rgba(199, 125, 255, 0.55);
+}
+@media (max-width: 560px) {
+  body.scene-casamarvel #btnDoor { bottom: calc(126px + env(safe-area-inset-bottom)); }
+}
 /* O REI: ◀ ▶ ⬆, as setas 🏹 (btnFire) e a corneta 📯 (btnHorn, por cima do ◀) */
 body.scene-rei #btnLeft,
 body.scene-rei #btnRight,
@@ -339,6 +350,13 @@ body.scene-marvel #btnCampo {
   background: rgba(120, 210, 255, 0.55);
 }
 body.scene-marvel.marvel-campo-espera #btnCampo { opacity: 0.4; }
+/* dentro do restaurante só ficam o ⚡ (comer) e o 🚪 (sair) */
+body.scene-marvel.marvel-dentro #btnLeft,
+body.scene-marvel.marvel-dentro #btnRight,
+body.scene-marvel.marvel-dentro #btnJump,
+body.scene-marvel.marvel-dentro #btnHorn,
+body.scene-marvel.marvel-dentro #btnChama,
+body.scene-marvel.marvel-dentro #btnCampo { display: none; }
 /* ao alto a fila do meio já não tem lugar: o 🙋 sobe para cima do 🦸 */
 @media (max-width: 560px) {
   body.scene-marvel #btnChama {

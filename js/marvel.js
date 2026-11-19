@@ -28,6 +28,9 @@
   // RESTAURANTE onde se come, BALÕES para rebentar e CARROS na estrada
   const TORRE_X = 1150, TORRE_W = 300, TORRE_H = 900;
   const REST_X = 4500, REST_W = 430, REST_H = 200;
+  // 9.ª ronda (2026-11-19): "onde nós comemos tem lá uma porta e nós entramos pela porta; lá dentro
+  // está o que cozinha e mesas e mesas" — a porta fica à esquerda do balcão de fora
+  const PORTA_REST_X = REST_X - REST_W / 2 + 58;
   const MAX_VIDAS = 5;                 // 5 corações; cada tiro tira MEIO coração
   const TETO = -(TORRE_H + 340);       // até onde o Homem de Ferro pode voar
   const GRAV = 1900;
@@ -608,6 +611,9 @@
     { x: 5980, cor: '#b5e6b5', telhado: '#2d6a4f' },
     { x: 6620, cor: '#cfe2ff', telhado: '#1d3557', herois: true }   // a casa dos heróis da Marvel
   ];
+  // "na nossa casa, quando queremos dormir, dormimos na nossa cama; e tem um botão de dormir"
+  const CASA_HEROIS = CASAS.find(function (h) { return h.herois; });
+  const CAMA_X = CASA_HEROIS.x - CASA_W / 2 + 220, CAMA_Y = -CASA_ANDAR;   // lá em cima, no 1.º andar
   const FONTES = [1760, 3830];
   const SPAWN = [700, 1500, 2350, 4050, 4900, 5750];
 
@@ -615,7 +621,7 @@
   // CARRO DE CORRIDA, super rápido, com disparadores no carro; e os mauzões ficam sem
   // veículo quando lhes damos — e eles também dão com pistoladas".
   const CORRIDA_V = 980, CORRIDA_W = 176;          // o carro dos Vingadores
-  const PARQUE_X = TORRE_X + 330;                  // onde o carro fica quando se descansa
+  const PARQUE_X = CASA_HEROIS.x - 330;            // onde o carro fica quando se vai dormir
   // os vilões que andam a pé vêm de carro (o Venom de mota); os que voam já têm a prancha/jatos
   const VEICULOS = {
     loki: { tipo: 'carro', cor: '#2d6a4f', enfeite: '#e0a526' },
@@ -663,7 +669,8 @@
   let vidas, medalhas, capturas, ganhouTudo, descanso;
   let transito, baloes, comidas, coracoes;
   let casas, ladroes, civis, avisoLadrao;
-  let corrida, portaVisivel;
+  let corrida, portaVisivel, iconePorta;
+  let dentro;                          // dentro do restaurante (o mundo lá fora fica parado)
   let equipa, chamada, campo, campoCd, campoEspera;
   let arranhoes;                       // as marcas roxas das garras da Pantera Negra
 
@@ -734,7 +741,9 @@
     };
     // o carro de corrida está estacionado logo ali, ao pé de onde se começa
     corrida = { x: heroi.x - 240, y: 0, vx: 0, vy: 0, dir: 1, noChao: true, roda: 0, fogo: 0, bate: 0 };
-    portaVisivel = false;
+    portaVisivel = false; iconePorta = '🚪'; dentro = null;
+    document.body.classList.remove('marvel-dentro');
+    const bp = document.getElementById('btnDoor'); if (bp) bp.textContent = '🚪';
     equipa = null; chamada = null; campo = null; campoCd = 0; campoEspera = false;
     document.body.classList.remove('marvel-campo-espera');
     tiros = []; tirosMaus = []; carros = []; fx = []; raios = []; ondas = []; banners = []; arranhoes = [];
@@ -1102,23 +1111,178 @@
     setTimeoutJogo(0.8, function () { if (v.estado === 'algemado' && !v.carro) chamaPolicia(v); });
   }
 
-  // sem corações vai-se descansar à Torre dos Vingadores (nunca há fim de jogo)
-  function descansar() {
+  // 9.ª ronda: sem corações vai-se dormir para a NOSSA CAMA, na Casa dos Heróis (nunca há
+  // fim de jogo); e o botão 😴 ao pé da cama faz o mesmo quando ele quiser
+  function deitaNaCama(semCoracoes) {
     if (descanso) return;
     const h = heroi;
-    if (h.conduz) {                    // o carro de corrida vai estacionar ao pé da Torre
+    if (dentro) saiRestaurante(true);
+    if (h.conduz) {                    // o carro de corrida vai estacionar ao pé de casa
       saiDoCarro(true);
       corrida.x = PARQUE_X; corrida.vx = 0; corrida.y = 0; corrida.vy = 0; corrida.noChao = true;
     }
     largaVilao();
-    descanso = { t: 0 };
-    h.desmonta = null; h.vx = 0; h.vy = 0; h.x = TORRE_X + 40; h.y = 0; h.noChao = true;
-    h.carroApoio = null; h.invul = 3.6; h.balanco = null; h.impulso = 0;
-    if (equipa) equipa.forEach(function (a, j) { a.x = h.x - 80 - j * 60; a.y = 0; });
-    sfx('poof');
-    faisca(h.x, h.y - 40, '#bde0fe', 20, 280);
-    fala('Sem corações! Vamos descansar à Torre dos Vingadores.');
-    G.banner('💤 A descansar na Torre…', 2600);
+    descanso = { t: 0, cama: true };
+    h.desmonta = null; h.vx = 0; h.vy = 0; h.x = CAMA_X; h.y = CAMA_Y; h.noChao = true; h.dir = 1;
+    h.carroApoio = null; h.invul = 3.8; h.balanco = null; h.impulso = 0; h.jato = 0;
+    if (equipa) equipa.forEach(function (a, j) { a.x = CASA_HEROIS.x - 220 - j * 60; a.y = 0; });
+    if (semCoracoes) {
+      sfx('poof');
+      faisca(h.x, h.y - 40, '#bde0fe', 20, 280);
+      fala('Sem corações! Vou dormir um bocadinho na nossa cama!');
+    } else {
+      sfx('whee');
+      fala('Vou dormir um bocadinho!');
+    }
+    G.banner('😴 Vou dormir um bocadinho!', 2400);
+  }
+  function descansar() { deitaNaCama(true); }
+
+  /* ---------- a porta do restaurante e a cama de casa ---------- */
+  function pertoDaPortaRest() {        // mesmo à frente da porta (a pé)
+    const h = heroi;
+    return !dentro && !h.conduz && !h.desmonta && !descanso && !h.carrega && !h.balanco && !chamada &&
+      h.y > -60 && Math.abs(h.x - PORTA_REST_X) < 46;
+  }
+  function pertoDaCama() {             // no 1.º andar da Casa dos Heróis, ao pé da cama
+    const h = heroi;
+    return !dentro && !h.conduz && !h.desmonta && !descanso && !h.carrega && !h.balanco && !chamada &&
+      h.noChao && Math.abs(h.y - CAMA_Y) < 6 && Math.abs(h.x - CAMA_X) < 100;
+  }
+  // o 🚪 (#btnDoor) serve para o carro, o restaurante e, com 😴, para a cama
+  function mostraPorta(ver, icone) {
+    if (ver !== portaVisivel) { portaVisivel = ver; document.body.classList.toggle('marvel-porta', ver); }
+    if (icone !== iconePorta) {
+      iconePorta = icone;
+      const b = document.getElementById('btnDoor');
+      if (b) b.textContent = icone;
+    }
+  }
+
+  // a comida que o cozinheiro traz à mesa, uma de cada vez
+  const PRATOS = ['hamburguer', 'pizza', 'cachorro', 'sopa', 'gelado', 'batatas', 'bolo'];
+  const NOME_PRATO = {
+    hamburguer: 'Um hambúrguer!', pizza: 'Pizza!', cachorro: 'Um cachorro-quente!', sopa: 'Uma sopinha quentinha!',
+    gelado: 'Um gelado!', batatas: 'Batatas fritas!', bolo: 'Uma fatia de bolo!'
+  };
+
+  function entraRestaurante() {
+    const h = heroi;
+    largaVilao();
+    h.vx = 0; h.vy = 0; h.balanco = null; h.impulso = 0; h.jato = 0; h.carroApoio = null;
+    // quem está a comer nas outras mesas: gente da cidade e alguns Vingadores
+    const outros = HEROIS.filter(function (d, k) { return k !== hi; }).sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+    const mesas = [];
+    for (let i = 0; i < 8; i++) {
+      const lug = [null, null], com = [null, null];
+      for (let j = 0; j < 2; j++) {
+        if (Math.random() < 0.3) continue;
+        const def = (outros.length && Math.random() < 0.35) ? outros.pop()
+          : (Math.random() < 0.2 ? CRIANCA : CIVIS[Math.floor(Math.random() * CIVIS.length)]);
+        lug[j] = { def: def, fase: rnd(0, TAU) };
+        com[j] = PRATOS[Math.floor(Math.random() * PRATOS.length)];
+      }
+      mesas.push({ lug: lug, com: com });
+    }
+    dentro = {
+      t: 0, fase: 'entra', mesas: mesas, chef: { fase: 'fogao', t: 0 },
+      prato: null, come: null, espera: 0.5, n: 0, prox: Math.floor(Math.random() * PRATOS.length)
+    };
+    document.body.classList.add('marvel-dentro');
+    mostraPorta(true, '🚪');
+    sfx('door');
+    fala('Vamos comer!');
+    fala('Olá! Senta-te à mesa, que eu já te trago comida!', true);   // a seguir, sem cortar
+  }
+
+  function saiRestaurante(calado) {
+    if (!dentro) return;
+    dentro = null;
+    document.body.classList.remove('marvel-dentro');
+    const h = heroi;
+    h.x = PORTA_REST_X; h.y = 0; h.vx = 0; h.vy = 0; h.noChao = true; h.dir = 1;
+    h.carroApoio = null; h.invul = Math.max(h.invul, 1.5);
+    if (!calado) { sfx('door'); fala('Obrigado, cozinheiro! Até logo!'); }
+  }
+
+  // o sítio de tudo na sala (em pixéis do ecrã): cabe ao alto e deitado
+  function sala() {
+    const W = G.W, H = G.H, deitado = W > H;
+    const topo = 60;                                  // por baixo dos corações e do 🏠/🔊
+    const kh = clamp(H * 0.27, 100, 200);             // a parede do fundo, com a cozinha
+    const chaoY = topo + kh;
+    const cols = deitado ? 4 : 2, rows = deitado ? 2 : 4;
+    const fx0 = 16, fx1 = W - 16, fy0 = chaoY + 6, fy1 = H - 12;
+    const cw = (fx1 - fx0) / cols, chh = (fy1 - fy0) / rows;
+    const k = Math.min(cw / 165, chh / 92, 1.6);
+    const mesas = [];
+    for (let r = 0; r < rows; r++) {
+      for (let q = 0; q < cols; q++) mesas.push({ x: fx0 + (q + 0.5) * cw, y: fy0 + (r + 1) * chh - 4 });
+    }
+    const ks = clamp(kh / 125, 0.75, 1.6);
+    const pw = 54 * ks, ph = Math.min(kh - 14, 100 * ks);
+    const kx0 = deitado ? W * 0.48 : W * 0.36, kx1 = W - 10;
+    return {
+      W: W, H: H, kh: kh, chaoY: chaoY, mesas: mesas, k: k, ks: ks, kx0: kx0, kx1: kx1,
+      heroiMesa: cols + (deitado ? 1 : 0),            // 2.ª fila, longe dos botões da direita
+      porta: { x: 22 + pw / 2, w: pw, h: ph },
+      fogao: { x: kx0 + (kx1 - kx0) * 0.5 }
+    };
+  }
+  function pratoHeroiXY(L) {
+    const m = L.mesas[L.heroiMesa];
+    return { x: m.x - 34 * L.k, y: m.y - 40 * L.k, r: 44 * L.k + 10 };
+  }
+
+  function updateDentro(dt) {
+    const I = G.input, D = dentro, L = sala();
+    D.t += dt;
+    mostraPorta(true, '🚪');
+    let sai = I.justPressed('door') || I.justPressed('down');
+    let come = I.justPressed('fire');
+    if (I.tap) {                       // os toques aqui dentro são só para a porta e para o prato
+      const p = I.tap, P = L.porta, pr = pratoHeroiXY(L);
+      I.tap = null;
+      if (Math.abs(p.x - P.x) < P.w / 2 + 14 && p.y > L.chaoY - P.h - 14 && p.y < L.chaoY + 14) sai = true;
+      else if (D.prato && Math.hypot(p.x - pr.x, p.y - pr.y) < pr.r) come = true;
+    }
+    if (sai) { saiRestaurante(); return; }
+    if (D.fase === 'entra' && D.t > 1.1) { D.fase = 'sentado'; sfx('hop'); }
+    // o cozinheiro sai do fogão, traz o prato à mesa e volta
+    const ch = D.chef;
+    if (ch.fase === 'fogao') {
+      if (D.fase === 'sentado' && !D.prato) {
+        D.espera -= dt;
+        if (D.espera <= 0) { ch.fase = 'vai'; ch.t = 0; ch.tipo = PRATOS[D.prox % PRATOS.length]; D.prox++; }
+      }
+    } else if (ch.fase === 'vai') {
+      ch.t += dt / 1.4;
+      if (ch.t >= 1) {
+        ch.fase = 'pousa'; ch.t = 0;
+        D.prato = { tipo: ch.tipo, t: 0 };
+        sfx('pop');
+        fala(NOME_PRATO[ch.tipo] + ' Bom apetite!');
+      }
+    } else if (ch.fase === 'pousa') {
+      ch.t += dt;
+      if (ch.t > 0.6) { ch.fase = 'volta'; ch.t = 0; }
+    } else if (ch.fase === 'volta') {
+      ch.t += dt / 1.2;
+      if (ch.t >= 1) { ch.fase = 'fogao'; ch.t = 0; }
+    }
+    if (D.prato) D.prato.t += dt;
+    // comer: tocar no prato ou o ⚡
+    if (come && D.prato && !D.come && D.fase === 'sentado') { D.come = { t: 0 }; sfx('nham'); }
+    if (D.come) {
+      D.come.t += dt;
+      if (D.come.t >= 1) {
+        const cheio = vidas >= MAX_VIDAS;
+        ganhaVida(1);
+        if (Math.random() < 0.35) { G.addStars(1); sfx('star'); }
+        G.banner(cheio ? '⭐ Nham nham!' : '❤️ Nham nham!', 1400);
+        D.prato = null; D.come = null; D.n++; D.espera = 0.7;
+      }
+    }
   }
 
   /* ---------- o carro de corrida dos Vingadores ---------- */
@@ -1379,9 +1543,9 @@
 
   function criaComidas() {
     comidas = [
-      { x: REST_X - 130, tipo: 'hamburguer', pronto: true, t: 0 },
-      { x: REST_X, tipo: 'cachorro', pronto: true, t: 0 },
-      { x: REST_X + 130, tipo: 'gelado', pronto: true, t: 0 }
+      { x: REST_X - 62, tipo: 'hamburguer', pronto: true, t: 0 },
+      { x: REST_X + 30, tipo: 'cachorro', pronto: true, t: 0 },
+      { x: REST_X + 118, tipo: 'gelado', pronto: true, t: 0 }
     ];
   }
   function updateComidas(dt) {
@@ -1456,8 +1620,8 @@
         ],
         cristais: h.herois ? [
           { x: x0 + CASA_W - 78, y: -40, cor: '#b388ff' },
-          { x: x0 + 92, y: -190, cor: '#4cc9f0' },
-          { x: x0 + 206, y: -190, cor: '#ff5d8f' }
+          { x: x0 + 56, y: -190, cor: '#4cc9f0' },
+          { x: x0 + 118, y: -178, cor: '#ff5d8f' }      // na mesinha de cabeceira, ao pé da cama
         ] : [],
         moradores: h.herois ? [] : [
           { def: CIVIS[(h.x | 0) % CIVIS.length], x: x0 + 206, y: 0, fase: 0 },
@@ -1855,14 +2019,19 @@
 
   function updateHeroi(dt) {
     const h = heroi, d = defHeroi(), I = G.input;
-    if (descanso) {                    // a dormir na Torre até os corações voltarem
+    if (descanso) {                    // a dormir na nossa cama até os corações voltarem
       descanso.t += dt;
-      if (descanso.t > 2.4 && !descanso.cheio) {
+      if (descanso.t > 2.5 && !descanso.cheio) {
         descanso.cheio = true; vidas = MAX_VIDAS; sfx('tada');
-        G.banner('❤️ Corações cheios!', 2000);
-        fala('Corações cheios! Vamos outra vez!');
+        G.banner('🐓 Já descansei! Vamos! ❤️', 2200);
+        fala('Já descansei! Vamos!');
       }
-      if (descanso.t > 3.4) descanso = null;
+      if (descanso.t > 3.4) {
+        descanso = null;
+        // acorda e levanta-se ao lado da cama
+        h.x = CAMA_X - 90; h.y = CAMA_Y; h.vx = 0; h.vy = 0; h.noChao = true; h.dir = -1;
+        h.invul = Math.max(h.invul, 1);
+      }
       return;
     }
     h.cd = Math.max(0, h.cd - dt);
@@ -1887,15 +2056,23 @@
       if (dm.t >= 1.4) { h.desmonta = null; h.invul = 1.8; }
       return;
     }
-    // a porta do carro de corrida: o 🚪, a seta para baixo, ou tocar no próprio carro
-    let porta = I.justPressed('door') || I.justPressed('down');
-    if (!porta && I.tap && (h.conduz || pertoDoCarro())) {
-      const sc = escala();
-      const sx = (corrida.x - cam.x) * sc, sy = chaoPx() + (corrida.y - 40 - cam.y) * sc;
-      porta = Math.abs(I.tap.x - sx) < 100 * sc && Math.abs(I.tap.y - sy) < 60 * sc;
+    // o 🚪 (ou a seta para baixo, ou tocar na coisa): o carro de corrida, a porta do
+    // restaurante e a nossa cama; a porta do restaurante só ganha mesmo à frente dela
+    const porta = I.justPressed('door') || I.justPressed('down');
+    let toque = null;
+    if (!porta && I.tap) {
+      const sc = escala(), cp = chaoPx();
+      const tocou = function (wx, wy, rx, ry) {
+        return Math.abs(I.tap.x - (wx - cam.x) * sc) < rx * sc && Math.abs(I.tap.y - (cp + (wy - cam.y) * sc)) < ry * sc;
+      };
+      if (pertoDaPortaRest() && tocou(PORTA_REST_X, -64, 50, 70)) toque = 'rest';
+      else if (pertoDaCama() && tocou(CAMA_X, CAMA_Y - 30, 90, 50)) toque = 'cama';
+      else if ((h.conduz || pertoDoCarro()) && tocou(corrida.x, corrida.y - 40, 100, 60)) toque = 'carro';
     }
-    if (porta) {
+    if (porta || toque) {
       if (h.conduz) { if (corrida.noChao) saiDoCarro(); }
+      else if (toque ? toque === 'rest' : pertoDaPortaRest()) { I.tap = null; entraRestaurante(); return; }
+      else if (toque ? toque === 'cama' : pertoDaCama()) { I.tap = null; deitaNaCama(false); return; }
       else if (pertoDoCarro()) entraNoCarro();
     }
     if (h.conduz) conduz(dt);
@@ -2176,6 +2353,8 @@
 
   /* ---------- update ---------- */
   S.update = function (dt) {
+    // dentro do restaurante o mundo lá fora fica parado (ninguém ataca, nada de tiros)
+    if (dentro) { updateDentro(dt); return; }
     tempo += dt;
     for (let i = agenda.length - 1; i >= 0; i--) {
       if (agenda[i].t <= tempo) { const f = agenda[i].fn; agenda.splice(i, 1); f(); }
@@ -2199,6 +2378,7 @@
     if (I.justPressed('debug9')) desmonta();
 
     updateHeroi(dt);
+    if (dentro) return;                // acabou de entrar no restaurante
     updateEquipa(dt);
     updateCampo(dt);
     if (!heroi.conduz && (Math.abs(corrida.vx) > 1 || !corrida.noChao)) {   // deixado a andar: trava sozinho
@@ -2259,9 +2439,10 @@
     const frente = heroi.conduz ? 0.22 * clamp(Math.abs(corrida.vx) / 500, 0.5, 1) : 0.12;
     const alvoX = clamp(heroi.x - vw / 2 + heroi.dir * vw * frente, 0, MUNDO - vw);
     cam.x += (alvoX - cam.x) * Math.min(1, dt * (heroi.conduz ? 6 : 4));
-    // o 🚪 só aparece quando dá para entrar ou sair do carro
-    const porta = heroi.conduz || pertoDoCarro();
-    if (porta !== portaVisivel) { portaVisivel = porta; document.body.classList.toggle('marvel-porta', porta); }
+    // o 🚪 só aparece quando dá para entrar ou sair do carro, ou à porta do restaurante;
+    // ao pé da nossa cama passa a ser o 😴
+    const cama = pertoDaCama();
+    mostraPorta(heroi.conduz || pertoDoCarro() || pertoDaPortaRest() || cama, cama ? '😴' : '🚪');
     // em cima, a câmara sobe para o herói ficar sempre à vista (nunca desce abaixo do chão)
     const querY = Math.min(0, heroi.y + (chaoPx() - G.H * 0.42) / sc);
     cam.y += (querY - cam.y) * Math.min(1, dt * 3);
@@ -2428,6 +2609,34 @@
       c.beginPath();
       for (let i = 0; i <= 4; i++) c.lineTo(-22 + i * 11, i % 2 ? -10 : -2);
       c.stroke();
+    } else if (tipo === 'pizza') {
+      c.fillStyle = '#d98e32'; c.beginPath(); c.ellipse(0, 12, 29, 10, 0, 0, TAU); c.fill();
+      c.fillStyle = '#e63946'; c.beginPath(); c.ellipse(0, 11, 24, 7.5, 0, 0, TAU); c.fill();
+      c.fillStyle = '#ffd166';
+      for (const q of [[-12, 10], [4, 7], [14, 12], [-3, 14]]) { c.beginPath(); c.ellipse(q[0], q[1], 6, 2.6, 0, 0, TAU); c.fill(); }
+      c.fillStyle = '#9d0208';
+      for (const q of [[-5, 9], [10, 9], [-15, 13], [3, 15]]) { c.beginPath(); c.ellipse(q[0], q[1], 3.6, 1.8, 0, 0, TAU); c.fill(); }
+    } else if (tipo === 'sopa') {
+      c.fillStyle = '#4cc9f0';
+      c.beginPath(); c.moveTo(-26, 2); c.quadraticCurveTo(-24, 22, 0, 22); c.quadraticCurveTo(24, 22, 26, 2); c.closePath(); c.fill();
+      c.fillStyle = '#f4a261'; c.beginPath(); c.ellipse(0, 2, 26, 6, 0, 0, TAU); c.fill();
+      c.fillStyle = '#8ac926'; c.beginPath(); c.arc(-8, 2, 2.6, 0, TAU); c.arc(7, 1, 2.2, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 2.6; c.lineCap = 'round';
+      for (const sx of [-9, 0, 9]) {       // o vapor
+        c.beginPath(); c.moveTo(sx, -4); c.quadraticCurveTo(sx - 5, -12, sx, -18); c.quadraticCurveTo(sx + 5, -24, sx, -30); c.stroke();
+      }
+    } else if (tipo === 'bolo') {
+      c.fillStyle = '#fff1e6'; rr(c, -20, -12, 40, 30, 4); c.fill();
+      c.fillStyle = '#ffafcc'; c.fillRect(-20, 1, 40, 5);
+      c.fillStyle = '#ff6fb1'; rr(c, -22, -20, 44, 11, 5); c.fill();
+      c.fillStyle = '#d00000'; c.beginPath(); c.arc(0, -24, 5.5, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.arc(-2, -26, 1.6, 0, TAU); c.fill();
+    } else if (tipo === 'batatas') {
+      c.fillStyle = '#ffd166';
+      for (let i = 0; i < 6; i++) { c.save(); c.translate(-12 + i * 4.8, -2); c.rotate((i - 2.5) * 0.1); c.fillRect(-2.2, -20, 4.4, 22); c.restore(); }
+      c.fillStyle = '#e63946';
+      c.beginPath(); c.moveTo(-19, -4); c.lineTo(19, -4); c.lineTo(15, 18); c.lineTo(-15, 18); c.closePath(); c.fill();
+      G.gfx.star(c, 0, 7, 6, '#ffd166', 0);
     } else {
       c.fillStyle = '#e8b56b';
       c.beginPath(); c.moveTo(-12, 2); c.lineTo(12, 2); c.lineTo(0, 26); c.closePath(); c.fill();
@@ -2442,7 +2651,7 @@
     const x0 = REST_X - REST_W / 2, y0 = -REST_H;
     c.fillStyle = '#fff3e0'; rr(c, x0, y0, REST_W, REST_H, 8); c.fill();
     c.fillStyle = '#bde0fe';
-    rr(c, x0 + 28, y0 + 74, 124, 80, 6); c.fill();
+    rr(c, x0 + 122, y0 + 74, 96, 80, 6); c.fill();
     rr(c, x0 + REST_W - 152, y0 + 74, 124, 80, 6); c.fill();
     for (let k = 0; k * 34 < REST_W; k++) {        // toldo às riscas
       c.fillStyle = k % 2 ? '#e63946' : '#f8f9fa';
@@ -2461,9 +2670,22 @@
     c.save(); c.translate(REST_X + 158, -46); c.scale(FIG * 0.95, FIG * 0.95);   // em cima de um degrau, para se ver por cima do balcão
     boneco(c, COZINHEIRO, { t: t, dir: -1, fase: 0, anda: false, braco: 0.5 + Math.sin(t * 5) * 0.4 });
     c.restore();
+    // a PORTA para entrar (à esquerda do balcão), com uma luzinha quando se está à frente
+    const px = PORTA_REST_X, aqui = pertoDaPortaRest();
+    if (aqui) {
+      c.fillStyle = 'rgba(255,209,102,' + (0.35 + Math.sin(t * 6) * 0.15) + ')';
+      rr(c, px - 46, -138, 92, 138, 10); c.fill();
+    }
+    c.fillStyle = '#7f5539'; rr(c, px - 38, -130, 76, 130, 6); c.fill();
+    c.fillStyle = '#a0522d'; rr(c, px - 31, -123, 62, 123, 4); c.fill();
+    c.fillStyle = '#8d4520'; rr(c, px - 24, -54, 48, 44, 3); c.fill();
+    c.fillStyle = '#ffe8a3'; c.beginPath(); c.arc(px, -90, 16, 0, TAU); c.fill();      // janelinha redonda com luz
+    c.strokeStyle = '#ffd166'; c.lineWidth = 4; c.stroke();
+    c.fillStyle = '#ffd166'; c.beginPath(); c.arc(px + 21, -62, 5, 0, TAU); c.fill();   // puxador
+    c.fillStyle = '#6a994e'; rr(c, px - 40, -6, 80, 8, 3); c.fill();                    // tapete
     // balcão e a comida em cima
-    c.fillStyle = '#e76f51'; rr(c, x0 + 34, -72, REST_W - 68, 72, 6); c.fill();
-    c.fillStyle = '#c85a3c'; c.fillRect(x0 + 40, -30, REST_W - 80, 9);
+    c.fillStyle = '#e76f51'; rr(c, x0 + 110, -72, REST_W - 144, 72, 6); c.fill();
+    c.fillStyle = '#c85a3c'; c.fillRect(x0 + 116, -30, REST_W - 156, 9);
     for (const cm of comidas) {
       if (cm.pronto) desenhaComida(c, cm.tipo, cm.x, -98, 1);
       else {
@@ -2508,6 +2730,40 @@
     G.gfx.star(c, q.x + 14, q.y - 42, 4 + b * 3, '#fff', t * 2);
   }
 
+  // a nossa cama, na Casa dos Heróis: cabeceira, almofada e o cobertor azul com estrela
+  function cobertor(c, y) {
+    c.fillStyle = '#1d3557'; rr(c, CAMA_X - 24, y, 90, 26, 7); c.fill();
+    c.fillStyle = '#e63946'; c.fillRect(CAMA_X - 24, y + 4, 90, 5);
+    G.gfx.star(c, CAMA_X + 28, y + 16, 8, '#ffd166', 0);
+  }
+  function nossaCama(c, t) {
+    const x = CAMA_X, y = CAMA_Y;
+    // mesinha de cabeceira (o cristal cor-de-rosa fica em cima dela)
+    c.fillStyle = '#9c6644'; rr(c, x - 120, y - 28, 36, 28, 3); c.fill();
+    c.fillStyle = '#ffd166'; c.beginPath(); c.arc(x - 102, y - 14, 3, 0, TAU); c.fill();
+    // cabeceira (alta) e os pés da cama
+    c.fillStyle = '#e63946'; rr(c, x - 76, y - 76, 16, 76, 5); c.fill();
+    c.fillStyle = '#c1121f'; rr(c, x - 80, y - 82, 24, 12, 5); c.fill();
+    G.gfx.star(c, x - 68, y - 56, 7, '#ffd166', 0);
+    c.fillStyle = '#e63946'; rr(c, x + 60, y - 46, 14, 46, 5); c.fill();
+    c.fillStyle = '#c1121f'; rr(c, x + 57, y - 52, 20, 10, 5); c.fill();
+    // estrado, colchão e almofada
+    c.fillStyle = '#9c6644'; rr(c, x - 62, y - 16, 124, 10, 3); c.fill();
+    c.fillRect(x - 58, y - 8, 7, 8); c.fillRect(x + 51, y - 8, 7, 8);
+    c.fillStyle = '#f8f9fa'; rr(c, x - 62, y - 30, 124, 16, 5); c.fill();
+    c.fillStyle = '#fff'; rr(c, x - 58, y - 42, 36, 16, 7); c.fill();
+    c.strokeStyle = '#dee2e6'; c.lineWidth = 2; c.stroke();
+    if (!(descanso && descanso.cama)) cobertor(c, y - 34);
+    if (pertoDaCama()) {               // a cama "chama": dá para dormir aqui
+      for (let k = 0; k < 2; k++) {
+        const a = (t * 1.2 + k) % 2;
+        c.globalAlpha = Math.max(0, 1 - a / 2);
+        G.gfx.label(c, 'z', x - 30 + a * 16, y - 52 - a * 26, 16 + k * 5, '#4361ee', 'center');
+      }
+      c.globalAlpha = 1;
+    }
+  }
+
   function casa(c, ca, t) {
     const d = ca.def, x0 = ca.x0, W = CASA_W, H = CASA_ANDAR * 2;
     // parede de trás e o interior
@@ -2526,10 +2782,13 @@
     c.fillStyle = '#ced4da'; c.fillRect(x0 + 152, -70, 5, 70);
     c.fillStyle = '#ffd166';
     c.beginPath(); c.moveTo(x0 + 136, -70); c.lineTo(x0 + 174, -70); c.lineTo(x0 + 166, -98); c.lineTo(x0 + 144, -98); c.closePath(); c.fill();
-    // cama lá em cima
-    c.fillStyle = '#f8f9fa'; rr(c, x0 + 150, -CASA_ANDAR - 44, 120, 44, 6); c.fill();
-    c.fillStyle = '#ff6fb1'; rr(c, x0 + 150, -CASA_ANDAR - 30, 120, 30, 6); c.fill();
-    c.fillStyle = '#f8f9fa'; rr(c, x0 + 156, -CASA_ANDAR - 40, 34, 20, 5); c.fill();
+    // cama lá em cima (na casa dos heróis é a NOSSA cama, com cabeceira e cobertor)
+    if (d.herois) nossaCama(c, t);
+    else {
+      c.fillStyle = '#f8f9fa'; rr(c, x0 + 150, -CASA_ANDAR - 44, 120, 44, 6); c.fill();
+      c.fillStyle = '#ff6fb1'; rr(c, x0 + 150, -CASA_ANDAR - 30, 120, 30, 6); c.fill();
+      c.fillStyle = '#f8f9fa'; rr(c, x0 + 156, -CASA_ANDAR - 40, 34, 20, 5); c.fill();
+    }
     // prateleiras das coisas brilhantes
     for (const b of ca.brilhantes) {
       c.fillStyle = '#9c6644';
@@ -2541,7 +2800,7 @@
     if (d.herois && !equipa) {
       const n = HEROIS.length, emCasa = [HEROIS[(hi + 1) % n], HEROIS[(hi + 2) % n]];
       emCasa.forEach(function (hd, k) {
-        const mx = k === 0 ? x0 + 206 : x0 + 60, my = k === 0 ? 0 : -CASA_ANDAR;
+        const mx = k === 0 ? x0 + 206 : x0 + 86, my = 0;   // lá em cima está a nossa cama
         c.save(); c.translate(mx, my); c.scale(FIG * 0.92, FIG * 0.92);
         boneco(c, hd, { t: t, dir: -1, fase: 0, anda: false, braco: 0.5 + Math.sin(t * 4 + k * 1.5) * 0.4 });
         c.restore();
@@ -3071,6 +3330,26 @@
   function desenhaHeroi(c, t) {
     const h = heroi, d = defHeroi();
     if (h.conduz) return;              // vai dentro do carro de corrida (desenhado lá)
+    if (descanso && descanso.cama) {   // deitado na nossa cama, tapadinho, com Zzz
+      c.save(); c.translate(CAMA_X + 30, CAMA_Y - 43); c.rotate(-Math.PI / 2); c.scale(FIG * 0.85, FIG * 0.85);
+      boneco(c, d, { t: t, dir: 1, fase: 0, anda: false, braco: 0 });
+      c.restore();
+      cobertor(c, CAMA_Y - 57);
+      if (!descanso.cheio) {
+        for (let k = 0; k < 3; k++) {
+          const a = (t * 1.4 + k * 0.6) % 2;
+          c.globalAlpha = Math.max(0, 1 - a / 2);
+          G.gfx.label(c, 'z', CAMA_X - 34 + a * 20, CAMA_Y - 72 - a * 34, 20 + k * 6, '#4361ee', 'center');
+        }
+        c.globalAlpha = 1;
+      } else {
+        for (let k = 0; k < 4; k++) {
+          const a = t * 4 + k * 1.6;
+          G.gfx.star(c, CAMA_X - 34 + Math.cos(a) * 30, CAMA_Y - 70 + Math.sin(a) * 18, 6, '#ffd166', a);
+        }
+      }
+      return;
+    }
     if (h.balanco) desenhaFio(c);
     c.save(); c.translate(h.x, h.y); c.scale(FIG, FIG);
     if (h.invul > 0 && !h.desmonta && Math.floor(t * 14) % 2) c.globalAlpha = 0.45;
@@ -3234,6 +3513,21 @@
     c.restore();
   }
 
+  // corações: cinco, e cada tiro tira meio
+  function desenhaCoracoes(c, cx, cy, cs) {
+    for (let i = 0; i < MAX_VIDAS; i++) {
+      const hx = cx + (i - (MAX_VIDAS - 1) / 2) * (cs * 2.2), sobra = vidas - i;
+      G.gfx.heart(c, hx, cy, cs, 'rgba(255,255,255,.55)');
+      if (sobra >= 1) G.gfx.heart(c, hx, cy, cs, '#ff4d6d');
+      else if (sobra >= 0.5) {
+        c.save();
+        c.beginPath(); c.rect(hx - cs - 2, cy - cs * 1.4, cs + 2, cs * 2.6); c.clip();
+        G.gfx.heart(c, hx, cy, cs, '#ff4d6d');
+        c.restore();
+      }
+    }
+  }
+
   function hud(c, t) {
     const W = G.W, L = hudLayout();
     // os seis vilões: cara normal enquanto andam à solta, atrás das grades quando presos
@@ -3251,18 +3545,7 @@
         cadeado(c, x + lado - 8, y0 + lado - 8, 7, '#ffd166');
       }
     });
-    // corações: cinco, e cada tiro tira meio
-    for (let i = 0; i < MAX_VIDAS; i++) {
-      const hx = L.cx + (i - (MAX_VIDAS - 1) / 2) * (L.cs * 2.2), sobra = vidas - i;
-      G.gfx.heart(c, hx, L.cy, L.cs, 'rgba(255,255,255,.55)');
-      if (sobra >= 1) G.gfx.heart(c, hx, L.cy, L.cs, '#ff4d6d');
-      else if (sobra >= 0.5) {
-        c.save();
-        c.beginPath(); c.rect(hx - L.cs - 2, L.cy - L.cs * 1.4, L.cs + 2, L.cs * 2.6); c.clip();
-        G.gfx.heart(c, hx, L.cy, L.cs, '#ff4d6d');
-        c.restore();
-      }
-    }
+    desenhaCoracoes(c, L.cx, L.cy, L.cs);
     // heróis (com a medalha de quem já ganhou uma ronda)
     const q = caraRect();
     HEROIS.forEach(function (d, k) {
@@ -3320,7 +3603,191 @@
     }
   }
 
+  /* ---------- dentro do restaurante (ecrã inteiro, em pixéis do ecrã) ---------- */
+  // onde está o cozinheiro: no fogão, a caminho da nossa mesa, a pousar o prato, ou a voltar
+  function chefXY(L) {
+    const ch = dentro.chef, m = L.mesas[L.heroiMesa];
+    const a = { x: L.fogao.x + 40 * L.ks, y: L.chaoY, s: L.ks * 0.95 };
+    const b = { x: m.x + 96 * L.k, y: m.y, s: L.k * 0.95 };
+    let k = 0;
+    if (ch.fase === 'vai') k = ch.t; else if (ch.fase === 'pousa') k = 1; else if (ch.fase === 'volta') k = 1 - ch.t;
+    const ida = b.x >= a.x ? 1 : -1;
+    return {
+      x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, s: a.s + (b.s - a.s) * k,
+      dir: ch.fase === 'volta' ? -ida : (ch.fase === 'pousa' ? -1 : ida)
+    };
+  }
+
+  // uma mesa com toalha aos quadrados, duas cadeiras, quem lá come e os pratos
+  function mesaSala(c, L, i, t) {
+    const D = dentro, m = L.mesas[i], minha = i === L.heroiMesa, info = D.mesas[i];
+    c.save(); c.translate(m.x, m.y); c.scale(L.k, L.k);
+    c.fillStyle = 'rgba(0,0,0,.12)'; c.beginPath(); c.ellipse(0, 0, 74, 7, 0, 0, TAU); c.fill();
+    for (let j = 0; j < 2; j++) {
+      const sx = j ? 34 : -34;
+      c.fillStyle = '#8d5524'; rr(c, sx - 16, -64, 32, 44, 6); c.fill();    // encosto da cadeira
+      c.fillStyle = '#a0673a'; rr(c, sx - 12, -60, 24, 7, 3); c.fill();
+      let quem = null, braco = 0;
+      if (minha) {
+        if (j === 0 && D.fase !== 'entra') { quem = defHeroi(); braco = D.come ? 0.65 + Math.sin(t * 18) * 0.35 : 0; }
+      } else if (info.lug[j]) {
+        quem = info.lug[j].def; braco = Math.max(0, Math.sin(t * 2.2 + info.lug[j].fase)) * 0.7;
+      }
+      if (quem) {
+        c.save(); c.translate(sx, -2);
+        boneco(c, quem, { t: t, dir: j ? -1 : 1, fase: 0, anda: false, braco: braco });
+        c.restore();
+      }
+    }
+    c.fillStyle = '#fff'; rr(c, -66, -30, 132, 28, 4); c.fill();
+    c.fillStyle = '#e63946';
+    for (let q = 0; q < 8; q++) for (let r = 0; r < 3; r++) if ((q + r) % 2 === 0) c.fillRect(-66 + q * 16.5, -30 + r * 9, 16.5, 9);
+    c.fillStyle = '#f8f9fa'; c.beginPath(); c.ellipse(0, -30, 70, 7, 0, 0, TAU); c.fill();
+    for (let j = 0; j < 2; j++) {
+      const sx = j ? 34 : -34;
+      let tipo = null, kk = 0.55;
+      if (minha) {
+        if (j === 0 && D.prato) { tipo = D.prato.tipo; if (D.come) kk *= 1 - D.come.t * 0.8; }
+      } else if (info.lug[j]) tipo = info.com[j];
+      if (tipo) desenhaComida(c, tipo, sx, -30 - 20 * kk, kk);
+    }
+    if (minha && D.prato && !D.come) {          // o prato "chama": toca aqui para comer
+      const p = 0.5 + Math.sin(t * 6) * 0.4;
+      c.strokeStyle = 'rgba(255,209,102,' + p + ')'; c.lineWidth = 4;
+      c.beginPath(); c.arc(-34, -40, 30 + Math.sin(t * 6) * 3, 0, TAU); c.stroke();
+    }
+    if (minha && D.come) {                     // migalhas a saltar
+      for (let k = 0; k < 4; k++) {
+        const a = (D.come.t * 3 + k * 0.25) % 1;
+        c.fillStyle = ['#ffd166', '#e0a526', '#ff9ec7', '#fff'][k];
+        c.beginPath(); c.arc(-34 + (k - 1.5) * 9 + a * (k % 2 ? 8 : -8), -48 - Math.sin(a * Math.PI) * 18, 2.6, 0, TAU); c.fill();
+      }
+    }
+    c.restore();
+  }
+
+  function desenhaSala(c, t) {
+    const L = sala(), D = dentro, W = L.W, H = L.H, ks = L.ks, cy = L.chaoY, P = L.porta;
+    // parede às riscas e chão de madeira
+    c.fillStyle = '#ffe8cc'; c.fillRect(0, 0, W, cy);
+    c.fillStyle = '#ffd8a8';
+    for (let x = 0; x < W; x += 36) c.fillRect(x, 0, 16, cy);
+    c.fillStyle = '#d4a373'; c.fillRect(0, cy, W, H - cy);
+    c.strokeStyle = 'rgba(120,72,36,.22)'; c.lineWidth = 2;
+    for (let y = cy + 24, i = 0; y < H + 26; y += 26, i++) {
+      c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke();
+      for (let x = (i % 2) * 60; x < W; x += 120) { c.beginPath(); c.moveTo(x, y - 26); c.lineTo(x, y); c.stroke(); }
+    }
+    c.fillStyle = '#b5835a'; c.fillRect(0, cy - 8, W, 10);       // rodapé
+
+    // a porta (por onde se sai), com uma estrelinha por cima
+    c.fillStyle = '#7f5539'; rr(c, P.x - P.w / 2 - 5, cy - P.h - 5, P.w + 10, P.h + 5, 6); c.fill();
+    c.fillStyle = '#a0522d'; rr(c, P.x - P.w / 2, cy - P.h, P.w, P.h, 4); c.fill();
+    c.fillStyle = '#ffe8a3'; c.beginPath(); c.arc(P.x, cy - P.h * 0.72, P.w * 0.22, 0, TAU); c.fill();
+    c.fillStyle = '#ffd166'; c.beginPath(); c.arc(P.x + P.w * 0.3, cy - P.h * 0.42, Math.max(3, P.w * 0.07), 0, TAU); c.fill();
+    G.gfx.star(c, P.x, cy - P.h - 16, 8 + Math.sin(t * 4) * 2, '#ffd166', t);
+
+    // janelas com cortinas, entre a porta e a cozinha
+    const kx0 = L.kx0, kx1 = L.kx1;
+    const jw = 70 * ks, jh = Math.min(L.kh * 0.5, 60 * ks), jy = cy - L.kh * 0.82;
+    for (let x = P.x + P.w / 2 + 26; x + jw < kx0 - 16; x += jw + 28) {
+      c.fillStyle = '#fff'; rr(c, x - 5, jy - 5, jw + 10, jh + 10, 6); c.fill();
+      c.fillStyle = '#90e0ef'; rr(c, x, jy, jw, jh, 4); c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath(); c.arc(x + jw * 0.35, jy + jh * 0.42, jh * 0.12, 0, TAU); c.arc(x + jw * 0.5, jy + jh * 0.36, jh * 0.16, 0, TAU);
+      c.arc(x + jw * 0.65, jy + jh * 0.42, jh * 0.12, 0, TAU); c.fill();
+      c.fillRect(x + jw / 2 - 2, jy, 4, jh); c.fillRect(x, jy + jh / 2 - 2, jw, 4);
+      c.fillStyle = '#e63946';
+      rr(c, x - 10, jy - 8, 14, jh + 16, 5); c.fill();
+      rr(c, x + jw - 4, jy - 8, 14, jh + 16, 5); c.fill();
+    }
+
+    // a cozinha ao fundo: azulejos, tachos na prateleira, balcão, fogão com panela e o cozinheiro
+    const kTop = cy - L.kh * 0.92;
+    c.fillStyle = '#e9f5f9'; c.fillRect(kx0, kTop, kx1 - kx0, cy - kTop);
+    c.strokeStyle = 'rgba(72,149,239,.25)'; c.lineWidth = 1.5;
+    const az = 18 * ks;
+    c.beginPath();
+    for (let x = kx0 + az; x < kx1; x += az) { c.moveTo(x, kTop); c.lineTo(x, cy); }
+    for (let y = kTop + az; y < cy; y += az) { c.moveTo(kx0, y); c.lineTo(kx1, y); }
+    c.stroke();
+    c.strokeStyle = '#adb5bd'; c.lineWidth = 3; c.strokeRect(kx0, kTop, kx1 - kx0, cy - kTop);
+    const shY = cy - L.kh * 0.7;
+    c.fillStyle = '#9c6644'; c.fillRect(kx0 + 8, shY, kx1 - kx0 - 16, 6 * ks);
+    const CT = ['#e63946', '#4361ee', '#ffb703', '#2a9d8f'];
+    for (let i = 0, x = kx0 + 28 * ks; x < kx1 - 24 * ks; i++, x += 46 * ks) {
+      c.fillStyle = CT[i % 4]; rr(c, x - 14 * ks, shY - 20 * ks, 28 * ks, 20 * ks, 5 * ks); c.fill();
+      c.fillStyle = '#495057'; c.fillRect(x - 3 * ks, shY - 25 * ks, 6 * ks, 5 * ks);
+    }
+    const bw = (kx1 - kx0) * 0.26, bh = 34 * ks;
+    c.fillStyle = '#e76f51'; rr(c, kx0 + 8, cy - bh, bw, bh, 4 * ks); c.fill();
+    c.fillStyle = '#c85a3c'; c.fillRect(kx0 + 12, cy - bh * 0.45, bw - 8, 5 * ks);
+    if (bw > 80 * ks) {
+      desenhaComida(c, 'pizza', kx0 + 8 + bw * 0.28, cy - bh - 12 * ks, 0.5 * ks);
+      desenhaComida(c, 'bolo', kx0 + 8 + bw * 0.72, cy - bh - 12 * ks, 0.5 * ks);
+    } else desenhaComida(c, 'pizza', kx0 + 8 + bw * 0.5, cy - bh - 12 * ks, 0.5 * ks);
+
+    const fx = L.fogao.x, fw = 64 * ks, fh = 30 * ks, rebordo = cy - fh - 20 * ks;
+    const naCozinha = D.chef.fase === 'fogao';
+    const mexe = 1.1 + Math.sin(t * 5) * 0.12;
+    if (naCozinha) {                   // o cozinheiro ao lado do fogão, a mexer a panela
+      c.save(); c.translate(fx + 40 * ks, cy); c.scale(ks * 0.95, ks * 0.95);
+      boneco(c, COZINHEIRO, { t: t, dir: -1, fase: 0, anda: false, braco: mexe });
+      c.restore();
+    }
+    c.fillStyle = '#6c757d'; rr(c, fx - fw / 2, cy - fh, fw, fh, 4 * ks); c.fill();
+    c.fillStyle = '#343a40'; rr(c, fx - fw * 0.36, cy - fh * 0.75, fw * 0.72, fh * 0.6, 3 * ks); c.fill();
+    c.fillStyle = 'rgba(255,138,28,' + (0.5 + Math.sin(t * 7) * 0.2) + ')';
+    rr(c, fx - fw * 0.28, cy - fh * 0.4, fw * 0.56, fh * 0.18, 2 * ks); c.fill();     // o lume lá dentro
+    c.fillStyle = '#adb5bd'; rr(c, fx - 22 * ks, rebordo, 44 * ks, 20 * ks, 5 * ks); c.fill();
+    c.fillStyle = '#868e96';
+    c.fillRect(fx - 29 * ks, rebordo + 5 * ks, 7 * ks, 5 * ks); c.fillRect(fx + 22 * ks, rebordo + 5 * ks, 7 * ks, 5 * ks);
+    c.fillStyle = '#f4a261'; c.beginPath(); c.ellipse(fx, rebordo, 20 * ks, 4.5 * ks, 0, 0, TAU); c.fill();
+    for (let i = 0; i < 3; i++) {      // o vapor da panela
+      const f = (t * 0.6 + i / 3) % 1;
+      c.fillStyle = 'rgba(255,255,255,' + (0.75 * (1 - f)) + ')';
+      c.beginPath();
+      c.arc(fx + (i - 1) * 12 * ks + Math.sin(t * 2 + i * 2) * 5 * ks, rebordo - 8 * ks - f * 55 * ks, (6 + f * 10) * ks, 0, TAU);
+      c.fill();
+    }
+    if (naCozinha) {                   // a colher de pau, da panela até à mão dele
+      const a = t * 5;
+      c.strokeStyle = '#9c6644'; c.lineWidth = 4 * ks; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(fx + Math.cos(a) * 8 * ks, rebordo + 3 * ks); c.lineTo(fx + 14 * ks + Math.cos(a) * 3 * ks, cy - 60 * ks); c.stroke();
+    }
+
+    // as mesas (de trás para a frente)
+    for (let i = 0; i < L.mesas.length; i++) mesaSala(c, L, i, t);
+
+    // o herói a entrar, da porta até à cadeira
+    if (D.fase === 'entra') {
+      const m = L.mesas[L.heroiMesa], a = Math.min(1, D.t / 1.1);
+      const x0 = P.x, y0 = cy + 10, x1 = m.x - 34 * L.k, y1 = m.y - 2 * L.k;
+      const s = L.ks + (L.k - L.ks) * a;
+      c.save(); c.translate(x0 + (x1 - x0) * a, y0 + (y1 - y0) * a); c.scale(s, s);
+      boneco(c, defHeroi(), { t: t, dir: x1 >= x0 ? 1 : -1, fase: t * 12, anda: true });
+      c.restore();
+    }
+    // o cozinheiro a trazer o prato (ou a voltar para o fogão)
+    if (!naCozinha) {
+      const p = chefXY(L), leva = D.chef.fase === 'vai';
+      c.save(); c.translate(p.x, p.y); c.scale(p.s, p.s);
+      boneco(c, COZINHEIRO, { t: t, dir: p.dir, fase: t * 12, anda: D.chef.fase !== 'pousa',
+        braco: leva ? 1 : (D.chef.fase === 'pousa' ? 0.6 : 0) });
+      if (leva) desenhaComida(c, D.chef.tipo, 28 * p.dir, -59, 0.5);
+      c.restore();
+    }
+
+    // os corações e as estrelas, lá em cima à esquerda
+    const cs = 12, hw = MAX_VIDAS * cs * 2.2;
+    c.fillStyle = 'rgba(34,34,59,.55)'; rr(c, 8, 8, hw + 84, 40, 12); c.fill();
+    desenhaCoracoes(c, 14 + hw / 2, 29, cs);
+    G.gfx.star(c, 28 + hw, 28, 10, '#ffd166', 0);
+    G.gfx.label(c, '' + G.state.stars, 42 + hw, 29, 18, '#fff', 'left', 'none');
+  }
+
   S.draw = function (c, t) {
+    if (dentro) { desenhaSala(c, t); return; }
     const sc = escala(), cp = chaoPx();
     fundo(c, t);
     c.save();
@@ -3414,7 +3881,9 @@
       veiculos: viloes.filter(function (v) { return v.veiculo; }).map(function (v) { return v.def.id + ':' + v.veiculo.hp; }),
       comida: comidas.filter(function (k) { return k.pronto; }).length,
       equipa: equipa ? equipa.map(function (a) { return HEROIS[a.k].id + (a.vai ? ':vai' : ''); }) : null,
-      chamada: !!chamada, campo: campo ? +campo.t.toFixed(1) : null, campoCd: +campoCd.toFixed(1), camX: Math.round(cam.x), camY: Math.round(cam.y)
+      chamada: !!chamada, campo: campo ? +campo.t.toFixed(1) : null, campoCd: +campoCd.toFixed(1), camX: Math.round(cam.x), camY: Math.round(cam.y),
+      dentro: dentro ? dentro.fase + ':' + dentro.chef.fase + (dentro.prato ? '+' + dentro.prato.tipo : '') + ':comeu' + dentro.n : null,
+      aDormir: !!(descanso && descanso.cama), porta: portaVisivel ? iconePorta : null
     };
   };
   // para testes: pôr o herói num sítio e mexer nos vilões
@@ -3427,7 +3896,20 @@
     mundo: function () { return { transito: transito, baloes: baloes, comidas: comidas, coracoes: coracoes,
       casas: casas, ladroes: ladroes, civis: civis }; },
     vidas: function (v) { if (v !== undefined) vidas = v; return vidas; },
-    medalhas: function () { return medalhas; }
+    medalhas: function () { return medalhas; },
+    // 9.ª ronda: o restaurante por dentro e a nossa cama
+    entraRestaurante: function () {
+      const h = heroi;
+      if (dentro) return;
+      if (descanso) descanso = null;
+      if (h.conduz) saiDoCarro(true);
+      h.desmonta = null; h.x = PORTA_REST_X; h.y = 0; h.noChao = true;
+      entraRestaurante();
+    },
+    saiRestaurante: function () { saiRestaurante(); },
+    vaiDormir: function () { deitaNaCama(false); },
+    comePrato: function () { if (dentro && dentro.prato && !dentro.come && dentro.fase === 'sentado') { dentro.come = { t: 0 }; sfx('nham'); } },
+    portaRestX: PORTA_REST_X, camaX: CAMA_X, camaY: CAMA_Y
   };
 
   G.scenes = G.scenes || {};

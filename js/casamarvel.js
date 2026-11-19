@@ -46,7 +46,7 @@
     FORCA_ANDAR: 0.12, FORCA_RONDA: 0.22,             // cada andar / volta: mais depressa
     OSSO_CD: [1.3, 2.4], BALA_V: 420,
     FANT_FASE: [2.6, 1.4],                            // fantasmas: tempo visível / tempo transparente (s)
-    SETA_V: 1050, SETA_G: 520, SETA_CD: 0.26, ALCANCE: 900,
+    SETA_V: 1050, SETA_G: 520, SETA_CD: 0.08, ALCANCE: 900, PEGA: 0.12, PUXA: 0.3,   // tirar a seta e puxar a corda (s)
     ESPECIAL_T: 14, ESPECIAL_DANO: 3, TONTO: 3, LUZ: 4,
     CHEFE_HP: 95, CHEFE_RONDA: 30, CHEFE_CD: 1.2,
     RAIO_LUZ: 270, RELAMPAGO: [5, 11],
@@ -152,7 +152,7 @@
     LEN = 6000 + i * 600 + (A().ultimo ? 800 : 0);
     camX = 0;
     ents = []; setas = []; balas = []; fx = []; parts = []; textos = []; presos = []; plataformas = []; janelas = [];
-    heroi = { x: 160, y: 0, vy: 0, dir: 1, noChao: true, saltos: 0, sobre: null, passo: 0, anda: false, cd: 0, tiro: 0,
+    heroi = { x: 160, y: 0, vy: 0, dir: 1, noChao: true, saltos: 0, sobre: null, passo: 0, anda: false, cd: 0, tiro: 0, armada: false, puxa: 0, pegaT: 0, avisoT: -9,
       coracoes: DIF.MAXC, inv: 2, descansa: 0 };
     especial = 0.5; luz = 0; relampago = 0; relT = rnd(2, 4);
     // varandas, estantes e mesas onde se pode saltar
@@ -270,13 +270,14 @@
     for (const s of balas) if (Math.abs(s.x - heroi.x) < 140 && s.y > -120) salta = true;
     const perto = chefe && chefe.estado === 'mau' && heroi.x > limite() - 80;
     const vis = maus().filter(function (e) { return noEcra(e.x); }).length;
-    return { ax: perto ? (Math.sin(tempo) > 0 ? 0.3 : -0.3) : 1, salta: salta && (heroi.noChao || (heroi.saltos < 2 && heroi.vy > -100)), fogo: true,
+    return { ax: perto ? (Math.sin(tempo) > 0 ? 0.3 : -0.3) : 1, salta: salta && (heroi.noChao || (heroi.saltos < 2 && heroi.vy > -100)),
+      puxa: !heroi.armada, solta: heroi.armada && heroi.puxa >= 1,
       especial: especial >= 1 && (vis >= 4 || (chefe && chefe.ativo && chefe.estado === 'mau')) };
   }
   function leInput() {
     if (piloto) return autopiloto();
     const I = G.input;
-    return { ax: I.axis().x, salta: I.justPressed('jump'), fogo: I.isHeld('fire'), especial: I.justPressed('horn') };
+    return { ax: I.axis().x, salta: I.justPressed('jump'), puxa: I.justPressed('fire'), solta: I.justPressed('door') || I.justPressed('down'), especial: I.justPressed('horn') };
   }
   function limite() { return chefe && chefe.estado === 'mau' ? chefe.x - 260 : LEN - 60; }
 
@@ -389,7 +390,20 @@
       }
     }
     if (h.y >= 0) { h.y = 0; h.vy = 0; h.noChao = true; h.sobre = null; h.saltos = 0; }
-    if (inp.fogo && h.cd <= 0) { dispara(); h.cd = DIF.SETA_CD; }
+    // o arco em dois toques (pedido do Isaac): ✋ o Gavião tira uma seta da aljava com a mão
+    // e puxa a corda; 🏹 solta e a seta voa. Puxada até ao fim, a seta vale por duas
+    if (inp.puxa && !h.armada && h.cd <= 0) { h.armada = true; h.puxa = 0; h.pegaT = DIF.PEGA; sfx('whoosh'); }
+    if (h.armada) {
+      if (h.pegaT > 0) h.pegaT -= dt;
+      else h.puxa = Math.min(1, h.puxa + dt / DIF.PUXA);
+    }
+    if (inp.solta) {
+      if (h.armada && h.pegaT <= 0) { dispara(h.puxa); h.armada = false; h.puxa = 0; h.cd = DIF.SETA_CD; }
+      else if (!h.armada && tempo - h.avisoT > 2.5) {
+        h.avisoT = tempo;
+        textos.push({ t: 'Primeiro puxa ✋', x: h.x, y: h.y - 140, age: 0, life: 1.2, cor: '#ffd166' });
+      }
+    }
     if (inp.especial && especial >= 1) setaDeLuz();
   }
 
@@ -405,7 +419,9 @@
     }
     return melhor;
   }
-  function dispara() {
+  function dispara(forca) {
+    if (forca === undefined) forca = 1;
+    const forte = forca >= 0.99;
     const h = heroi, ox = h.x + h.dir * 26, oy = h.y - 62;
     let alvo = alvoMaisPerto(ox, oy, h.dir, DIF.ALCANCE);
     if (!alvo) { alvo = alvoMaisPerto(ox, oy, -h.dir, 450); if (alvo) h.dir = -h.dir; }
@@ -415,7 +431,7 @@
       const tt = Math.max(0.08, Math.hypot(dx, dy) / DIF.SETA_V);
       vx = dx / tt; vy = (dy - 0.5 * DIF.SETA_G * tt * tt) / tt;
     }
-    setas.push({ x: h.x + h.dir * 26, y: oy, vx: vx, vy: vy, t: 0 });
+    setas.push({ x: h.x + h.dir * 26, y: oy, vx: vx, vy: vy, t: 0, dano: forte ? 2 : 1, forte: forte });
     h.tiro = 0.18; sfx('arco');
   }
   function setaDeLuz() {
@@ -561,7 +577,7 @@
       for (const e of ents) {
         if (fora) break;
         if (!atingivel(e)) continue;
-        if (dentro(caixa(e), s.x, s.y, 6)) { feri(e, 1); fora = true; sfx('pop'); }
+        if (dentro(caixa(e), s.x, s.y, 6)) { feri(e, s.dano || 1); fora = true; sfx('pop'); }
       }
       if (fora) {
         if (s.y > -2) parts.push({ x: s.x, y: -2, vx: 0, vy: -60, t: 0, life: 0.3, cor: '#adb5bd', r: 3 });
@@ -811,7 +827,7 @@
     if (h.inv > 0 && Math.floor(t * 14) % 2 === 0) c.globalAlpha = 0.45;
     const K = 1.3;
     c.scale(h.dir * K, K);
-    const braco = h.tiro > 0 ? 1 : 0.88;
+    const braco = h.tiro > 0 || (h.armada && h.pegaT <= 0) ? 1 : 0.88;
     figura(c, GAVIAO, { t: t, dir: 1, fase: h.passo, anda: h.anda && h.noChao, braco: braco, noAr: !h.noChao });
     // o cabelo curto e a máscara roxa
     c.fillStyle = '#6b4a2b'; G.gfx.rr(c, -8.6, -71.5, 17.2, 6.5, 3); c.fill(); c.fillRect(-8.6, -68, 3, 5);
@@ -823,12 +839,25 @@
     c.fillStyle = '#c77dff'; c.fillRect(-15, -58, 2, 6); c.fillRect(-11, -59, 2, 7);
     // o arco na mão da frente
     const ang = -0.2 - 1.35 * braco, hx = 9.2 - Math.sin(ang) * 18.5, hy = -47 + Math.cos(ang) * 18.5;
-    const puxa = h.tiro > 0 ? 7 : 0;
+    const puxa = h.armada && h.pegaT <= 0 ? 2 + 9 * h.puxa : (h.tiro > 0 ? 7 : 0);
     c.strokeStyle = '#5a189a'; c.lineWidth = 2.8;
     c.beginPath(); c.arc(hx - 4, hy, 17, -1.2, 1.2); c.stroke();
     c.strokeStyle = '#1b1b1b'; c.lineWidth = 1.4; c.beginPath(); c.arc(hx - 4, hy, 17, -0.25, 0.25); c.stroke();
     c.strokeStyle = '#f1f3f5'; c.lineWidth = 1;
     c.beginPath(); c.moveTo(hx - 4 + Math.cos(-1.2) * 17, hy + Math.sin(-1.2) * 17); c.lineTo(hx - 2 - puxa, hy); c.lineTo(hx - 4 + Math.cos(1.2) * 17, hy + Math.sin(1.2) * 17); c.stroke();
+    if (h.armada) {
+      // a seta: primeiro sai da aljava na mão, depois fica na corda (brilha quando está bem puxada)
+      let x1, y1, x2, y2;
+      if (h.pegaT > 0) { const u = 1 - h.pegaT / DIF.PEGA; x1 = -12 + u * 8; y1 = -64 + u * 4; x2 = x1 + 4; y2 = y1 - 20; }
+      else { x1 = hx - 2 - puxa; y1 = hy; x2 = hx + 16; y2 = hy; }
+      c.strokeStyle = h.puxa >= 1 ? '#ffd166' : '#c77dff'; c.lineWidth = h.puxa >= 1 ? 2.6 : 1.8;
+      c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+      c.fillStyle = '#e9ecef'; c.beginPath();
+      const an = Math.atan2(y2 - y1, x2 - x1);
+      c.moveTo(x2 + Math.cos(an) * 4, y2 + Math.sin(an) * 4);
+      c.lineTo(x2 + Math.cos(an + 2.5) * 4, y2 + Math.sin(an + 2.5) * 4);
+      c.lineTo(x2 + Math.cos(an - 2.5) * 4, y2 + Math.sin(an - 2.5) * 4); c.closePath(); c.fill();
+    }
     c.restore();
   }
   function armario(c, t) {
